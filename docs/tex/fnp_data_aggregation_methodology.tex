@@ -1,0 +1,149 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+
+% ============================================================================
+% THEME AND APPEARANCE
+% ============================================================================
+\usetheme{Madrid}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{}
+
+% ============================================================================
+% PACKAGES
+% ============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{siunitx}
+\usepackage{hyperref}
+
+% Make LaTeX find images in the output/figures directory
+\graphicspath{{figures/}{../figures/}}
+
+% ============================================================================
+% CONFIGURATION
+% ============================================================================
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=gray
+}
+\sisetup{detect-all=true}
+
+\newcommand{\priceunit}{\si{R\$\,/ha}}
+
+% ============================================================================
+% TITLE PAGE
+% ============================================================================
+\title{FNP Land Price Data Aggregation}
+\subtitle{Municipality-Level Pastureland Prices in the Amazon}
+\author{Leonardo Gomes}
+\date{\today}
+
+% ============================================================================
+% DOCUMENT
+% ============================================================================
+\begin{document}
+
+% Title slide
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ============================================================================
+% SECTION: DATA SOURCE
+% ============================================================================
+\section{Data Source \& Structure}
+
+\begin{frame}{FNP Market Survey Data}
+  \textbf{Data Collection}
+  \begin{itemize}
+    \item FNP conducts market surveys to estimate land prices
+    \item Prices reported in \priceunit{} for specific land types
+    \item Annual estimates for subset of municipalities $M$
+  \end{itemize}
+
+  \vspace{0.6em}
+  \textbf{Data Structure}
+  \begin{itemize}
+    \item Raw data: unique price estimates for each $(m, t, y)$ combination
+    \item $m \in M$: municipalities with available data
+    \item $t \in T$: land types (e.g., \textit{pastagem formada}, \textit{pastagem nativa})
+    \item $y$: year of observation
+    \item Many $(m, t, y)$ combinations missing due to data availability
+  \end{itemize}
+\end{frame}
+
+% ============================================================================
+% SECTION: AGGREGATION METHODOLOGY
+% ============================================================================
+\section{Municipality-Level Aggregation}
+
+\begin{frame}{Land Type Classification}
+  \textbf{Macro-categories}
+  \begin{itemize}
+    \item Land types $T$ grouped into macro-categories (e.g., \textit{pastagem}, \textit{floresta})
+    \item Multiple subtypes within each category
+  \end{itemize}
+
+  \vspace{0.6em}
+  \textbf{Example: Pastagem Category}
+  \begin{itemize}
+    \item \textit{pastagem formada} (formed pasture)
+    \item \textit{pastagem nativa} (native pasture)
+  \end{itemize}
+
+  \vspace{0.6em}
+  
+  \small*Pastagem only has these two varieties in the post-2016 data
+\end{frame}
+
+\begin{frame}{Municipality-Level Aggregation Process}
+  \textbf{Step 1: Municipality-level aggregation}
+  \begin{itemize}
+    \item For each municipality $m$ in the 2017 sample:
+    \item Identify all land types $t \in T_{\text{pastagem}}$ (pasture subtypes)
+    \item Calculate mean price across all pasture subtypes for each year $y$
+  \end{itemize}
+
+  \vspace{0.6em}
+  \textbf{Final Output}
+  \begin{itemize}
+    \item 46 Amazon municipalities with pastagem data $\times$ 7 years (2016--2022)
+    \item Municipality-level average prices in R\$ for 1ha of pastureland
+    \item Each municipality represents a distinct spatial unit
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Spatial Distribution: Pastureland Prices}
+  \begin{center}
+    \includegraphics[width=1\textwidth,height=0.8\textheight,keepaspectratio]{../../output/figures/vnp_municipalities_overlay.png}
+  \end{center}
+  
+
+\end{frame}
+
+
+% ============================================================================
+% SECTION: DATA CHARACTERISTICS
+% ============================================================================
+\section{Data Characteristics}
+
+
+\begin{frame}{Summary Statistics: Pastureland Prices}
+  \input{../../output/results/pastagem_summary_table.tex}
+  
+  \vspace{0.8em}
+  \begin{itemize}
+    \item Prices in \priceunit{}
+    \item Sample: 46 municipalities with pastagem data in 2017 (reference year)
+    \item Note: 2022 has 40 municipalities due to missing data in some locations
+  \end{itemize}
+\end{frame}
+
+\end{document}

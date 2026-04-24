@@ -1,0 +1,44 @@
+# R
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+*.Rproj.user/
+
+# renv
+renv/library/
+renv/local/
+renv/cellar/
+renv/lock/
+renv/python/
+renv/sandbox/
+renv/staging/
+
+# Data
+data/
+patricio_preach_tomas_work/cleaned_data/
+*.RData
+*.Rdata
+*.csv
+*.xlsx
+
+# Output
+output/results/*
+output/figures/*
+!output/results/.gitkeep
+!output/figures/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+

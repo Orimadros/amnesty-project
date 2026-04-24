@@ -1,0 +1,3 @@
+\beamer@sectionintoc {1}{Data Source \& Structure}{2}{0}{1}
+\beamer@sectionintoc {2}{Municipality-Level Aggregation}{3}{0}{2}
+\beamer@sectionintoc {3}{Data Characteristics}{6}{0}{3}
