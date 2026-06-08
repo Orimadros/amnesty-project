@@ -1,0 +1,11 @@
+# Code owners for amnesty-project
+#
+# Every file is owned by the repository admin. Combined with the
+# "require review from Code Owners" rule on the protected default
+# branch (see the `leo-only` ruleset), this means every pull request
+# must be approved by @Orimadros before it can be merged into main.
+#
+# Junior collaborators can push feature branches and open PRs, but
+# cannot merge anything into main without the admin's explicit review.
+
+*       @Orimadros
