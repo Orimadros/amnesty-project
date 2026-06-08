@@ -1,0 +1,15 @@
+.git/
+.Rhistory
+.RData
+.Rproj.user/
+.claude/
+legacy_repo/
+build/
+AGENTS.md
+CLAUDE.md
+output/
+data/
+docs/
+*.log
+.DS_Store
+TODO.md

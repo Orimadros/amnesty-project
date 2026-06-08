@@ -1,0 +1,2457 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazon Amnesty Project Onboarding</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --muted: #596775;
+      --quiet: #7a8794;
+      --line: #d9e0e7;
+      --paper: #f7f8fa;
+      --panel: #ffffff;
+      --green: #24745d;
+      --green-soft: #e5f3ed;
+      --blue: #266b9f;
+      --blue-soft: #e6f0f8;
+      --amber: #9a6617;
+      --amber-soft: #fff0cf;
+      --red: #a33a32;
+      --red-soft: #f9e6e4;
+      --violet: #6551a1;
+      --violet-soft: #eee9fb;
+      --shadow: 0 16px 42px rgba(31, 41, 51, 0.09);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, #eef3f5 0, #f9fafb 420px, #ffffff 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.58;
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration-thickness: 0.08em;
+      text-underline-offset: 0.18em;
+    }
+
+    code {
+      padding: 0.12rem 0.28rem;
+      border: 1px solid #dce1e8;
+      border-radius: 5px;
+      background: #f3f5f7;
+      color: #25313d;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 0;
+      padding: 1rem;
+      overflow-x: auto;
+      border: 1px solid #d7dde5;
+      border-radius: var(--radius);
+      background: #17212b;
+      color: #edf4f7;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    pre code {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      min-height: 70vh;
+      padding: 32px 0 34px;
+      display: grid;
+      align-items: end;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.92), rgba(255,255,255,0.68)),
+        repeating-linear-gradient(135deg, rgba(36,116,93,0.10) 0 1px, transparent 1px 18px),
+        linear-gradient(135deg, #e6f0f8 0, #ffffff 52%, #e5f3ed 100%);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 72px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+
+    .mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: var(--ink);
+      color: white;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .nav a {
+      padding: 0.45rem 0.7rem;
+      border: 1px solid rgba(31, 41, 51, 0.13);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.78);
+      color: #26333f;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 650;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr);
+      gap: 42px;
+      align-items: end;
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--green);
+      font-size: 0.82rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 820px;
+      margin: 0;
+      font-size: clamp(2.35rem, 5vw, 5rem);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .hero-copy {
+      max-width: 730px;
+      margin: 22px 0 0;
+      color: #344454;
+      font-size: clamp(1rem, 1.5vw, 1.22rem);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.45rem;
+      padding: 0.58rem 0.82rem;
+      border: 1px solid rgba(31, 41, 51, 0.16);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 780;
+      font-size: 0.92rem;
+    }
+
+    .button.primary {
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .learn-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-height: 1.7rem;
+      margin: 0 0.08rem;
+      padding: 0.16rem 0.5rem 0.16rem 0.34rem;
+      border: 1px solid rgba(38, 107, 159, 0.34);
+      border-radius: 999px;
+      background: var(--blue-soft);
+      color: #1e5d8c;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 760;
+      vertical-align: baseline;
+    }
+
+    .learn-button::before {
+      content: "?";
+      width: 1.05rem;
+      height: 1.05rem;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #fff;
+      color: var(--blue);
+      font-size: 0.72rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .learn-button:hover,
+    .learn-button:focus-visible {
+      border-color: var(--blue);
+      outline: 0;
+      box-shadow: 0 0 0 3px rgba(38, 107, 159, 0.15);
+    }
+
+    .learn-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 0.78fr) minmax(280px, 1fr);
+      gap: 18px;
+      align-items: center;
+      padding: 18px 20px;
+      border: 1px solid rgba(38, 107, 159, 0.24);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(230,240,248,0.9), rgba(255,255,255,0.98));
+    }
+
+    .learn-strip h3 {
+      margin: 0 0 4px;
+      font-size: 1.04rem;
+    }
+
+    .learn-strip p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .learn-strip .pill-row {
+      margin-top: 0;
+      justify-content: flex-end;
+    }
+
+    .hero-panel {
+      border: 1px solid rgba(31, 41, 51, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.9);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero-panel img {
+      display: block;
+      width: 100%;
+      height: 255px;
+      object-fit: cover;
+      background: #edf1f4;
+    }
+
+    .hero-panel-body {
+      padding: 18px 20px 20px;
+    }
+
+    .hero-panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.02rem;
+      letter-spacing: 0;
+    }
+
+    .hero-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    main {
+      padding: 34px 0 70px;
+    }
+
+    section {
+      padding: 46px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    section:last-child {
+      border-bottom: 0;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.72fr) minmax(280px, 1fr);
+      gap: 34px;
+      align-items: start;
+      margin-bottom: 24px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(1.7rem, 3vw, 2.65rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.03rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 10px 26px rgba(31, 41, 51, 0.04);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 1.06rem;
+      letter-spacing: 0;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .card p + p {
+      margin-top: 0.72rem;
+    }
+
+    .card ul,
+    .card ol {
+      margin: 0.62rem 0 0;
+      padding-left: 1.18rem;
+      color: var(--muted);
+    }
+
+    .card li + li {
+      margin-top: 0.42rem;
+    }
+
+    .label {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 1.6rem;
+      margin-bottom: 12px;
+      padding: 0.18rem 0.54rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .label.ok {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .label.warn {
+      background: var(--amber-soft);
+      color: var(--amber);
+    }
+
+    .label.stop {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .label.info {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .label.violet {
+      background: var(--violet-soft);
+      color: var(--violet);
+    }
+
+    .path {
+      counter-reset: step;
+    }
+
+    .path-step {
+      position: relative;
+      padding-left: 58px;
+    }
+
+    .path-step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 20px;
+      top: 20px;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: var(--ink);
+      color: #fff;
+      font-weight: 850;
+      line-height: 1;
+    }
+
+    .mini {
+      color: var(--quiet);
+      font-size: 0.9rem;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 1.9rem;
+      padding: 0.25rem 0.58rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f7f9fb;
+      color: #344454;
+      font-size: 0.86rem;
+      font-weight: 680;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      font-size: 0.95rem;
+    }
+
+    .table th,
+    .table td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .table th {
+      background: #eef2f5;
+      color: #303d4a;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(135px, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .stage {
+      min-height: 164px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-top-width: 5px;
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .stage h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .stage p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .stage .kicker {
+      margin-bottom: 8px;
+      color: var(--quiet);
+      font-size: 0.77rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .stage.ok { border-top-color: var(--green); }
+    .stage.warn { border-top-color: var(--amber); }
+    .stage.stop { border-top-color: var(--red); }
+    .stage.info { border-top-color: var(--blue); }
+    .stage.violet { border-top-color: var(--violet); }
+
+    .concept {
+      display: grid;
+      grid-template-columns: minmax(160px, 0.46fr) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .concept h3 {
+      margin: 0;
+      font-size: 1.02rem;
+    }
+
+    .concept p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .callout {
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-left-width: 6px;
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .callout h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+
+    .callout p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .callout.stop { border-left-color: var(--red); }
+    .callout.warn { border-left-color: var(--amber); }
+    .callout.ok { border-left-color: var(--green); }
+    .callout.info { border-left-color: var(--blue); }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .checklist li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .box {
+      width: 20px;
+      height: 20px;
+      margin-top: 0.2rem;
+      border: 2px solid var(--blue);
+      border-radius: 5px;
+      background: #fff;
+    }
+
+    .checklist strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .checklist span {
+      color: var(--muted);
+    }
+
+    .foot {
+      padding: 30px 0 46px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .learning-shell[hidden] {
+      display: none;
+    }
+
+    .learning-shell {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+    }
+
+    .learning-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(31, 41, 51, 0.28);
+    }
+
+    .learning-drawer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: min(460px, 100%);
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      border-left: 1px solid var(--line);
+      background: #fff;
+      box-shadow: -20px 0 55px rgba(31, 41, 51, 0.18);
+    }
+
+    .learning-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px;
+      border-bottom: 1px solid var(--line);
+      background: #f7f9fb;
+    }
+
+    .learning-head p {
+      margin: 0 0 4px;
+      color: var(--blue);
+      font-size: 0.78rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .learning-head h2 {
+      margin: 0;
+      font-size: 1.35rem;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .learning-close {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 1.28rem;
+      line-height: 1;
+    }
+
+    .learning-body {
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .lesson-block {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .lesson-block + .lesson-block {
+      margin-top: 12px;
+    }
+
+    .lesson-block h3 {
+      margin: 0 0 7px;
+      color: #2b3947;
+      font-size: 0.92rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .lesson-block p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .learning-body p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .learning-body p + p,
+    .learning-body ul + p,
+    .learning-body pre + p {
+      margin-top: 0.86rem;
+    }
+
+    .learning-body h3 {
+      margin: 1.1rem 0 0.45rem;
+      color: #2b3947;
+      font-size: 0.94rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .learning-body h3:first-child {
+      margin-top: 0;
+    }
+
+    .learning-body ul {
+      margin: 0.5rem 0 0;
+      padding-left: 1.18rem;
+      color: var(--muted);
+    }
+
+    .learning-body li + li {
+      margin-top: 0.36rem;
+    }
+
+    .lesson-example {
+      margin: 0.72rem 0;
+      padding: 0.85rem;
+      border: 1px solid #cfd7e0;
+      border-radius: var(--radius);
+      background: #f7f9fb;
+    }
+
+    .lesson-note {
+      margin-top: 0.9rem;
+      padding: 0.85rem;
+      border-left: 5px solid var(--amber);
+      border-radius: var(--radius);
+      background: var(--amber-soft);
+      color: #5d4215;
+    }
+
+    .lesson-block code {
+      word-break: break-word;
+    }
+
+    @media (max-width: 1100px) {
+      .grid.four,
+      .flow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid,
+      .section-head,
+      .grid.two,
+      .grid.three {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-bottom: 44px;
+      }
+
+      .nav {
+        justify-content: flex-start;
+      }
+
+      .concept {
+        grid-template-columns: 1fr;
+      }
+
+      .learn-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .learn-strip .pill-row {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .wrap {
+        width: min(100% - 24px, 1180px);
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 20px;
+      }
+
+      .grid.four,
+      .flow {
+        grid-template-columns: 1fr;
+      }
+
+      .table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .path-step {
+        padding-left: 20px;
+      }
+
+      .path-step::before {
+        position: static;
+        margin-bottom: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">
+          <div class="mark">A</div>
+          <div>amnesty-project onboarding</div>
+        </div>
+        <nav class="nav" aria-label="Page sections">
+          <a href="#read-order">Read order</a>
+          <a href="#paper">Paper</a>
+          <a href="#repo-does">Repo</a>
+          <a href="#concepts">Concepts</a>
+          <a href="#libraries">Libraries</a>
+          <a href="#status">Status</a>
+          <a href="#commands">Commands</a>
+        </nav>
+      </div>
+
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">A portal for a first-time handoff</p>
+          <h1>Start here, even if Docker and DAGs are new words.</h1>
+          <p class="hero-copy">
+            This page is both an onboarding note for the Amazon land amnesty project
+            and a compact guide to the coding/reproducibility ideas you need in order
+            to take over the migration from <code>legacy_repo/</code> into the new
+            pipeline
+            <button type="button" class="learn-button" data-learn="pipeline">pipeline</button>.
+            It assumes curiosity, not prior economics or engineering training.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#read-order">Start the guided path</a>
+            <a class="button" href="#status">Jump to migration status</a>
+            <a class="button" href="docs/papers/amnesty_wp.pdf">Open the paper PDF</a>
+          </div>
+        </div>
+
+        <aside class="hero-panel" aria-label="Project visual example">
+          <img src="output/figures/vnp_price_map_all.png" alt="Project land price map output">
+          <div class="hero-panel-body">
+            <h2>What you are looking at</h2>
+            <p>
+              This is one of the repo's land-price map outputs. The project is full of
+              spatial data
+              <button type="button" class="learn-button" data-learn="spatial-data">spatial data</button>
+              like this: boundaries, rasters, parcels, regions, and maps
+              that eventually feed tables and figures in the paper.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="read-order">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>How to read this page</h2>
+          <p>
+            If you are new to the paper and new to reproducible coding, read top to bottom.
+            The migration details only make sense after the paper goal, data, and pipeline
+            vocabulary are in your head.
+          </p>
+        </div>
+
+        <div class="grid four path">
+          <article class="card path-step">
+            <h3>Understand the paper</h3>
+            <p>The paper asks whether land amnesties reduce illegal deforestation or reward and encourage future land grabbing <button type="button" class="learn-button" data-learn="moral-hazard">moral hazard</button>.</p>
+          </article>
+          <article class="card path-step">
+            <h3>Understand the data</h3>
+            <p>Most work is transforming messy spatial data into parcel types, deforestation histories, and market outcomes.</p>
+          </article>
+          <article class="card path-step">
+            <h3>Learn the workflow ideas</h3>
+            <p>
+              Docker <button type="button" class="learn-button" data-learn="docker">Docker</button>,
+              DAGs <button type="button" class="learn-button" data-learn="dag">DAG</button>,
+              raw/intermediate/output folders <button type="button" class="learn-button" data-learn="folders">folders</button>,
+              and provenance <button type="button" class="learn-button" data-learn="provenance">provenance</button>
+              are not ornament. They are how the project becomes credible.
+            </p>
+          </article>
+          <article class="card path-step">
+            <h3>Then touch the migration</h3>
+            <p>The current work is not "clean up some files." It is rebuilding the research pipeline so every result has a traceable producer.</p>
+          </article>
+        </div>
+
+        <div style="height: 16px"></div>
+
+        <div class="learn-strip">
+          <div>
+            <h3>Use the blue learning balloons as training wheels</h3>
+            <p>
+              Click any small blue pill when a term feels slippery. Some open a short
+              conceptual explanation, some show command examples, and some explain a
+              best-practice rule in the context of this repo.
+            </p>
+          </div>
+          <div class="pill-row" aria-label="Example learning topics">
+            <button type="button" class="learn-button" data-learn="makefile">Makefile</button>
+            <button type="button" class="learn-button" data-learn="renv">renv.lock</button>
+            <button type="button" class="learn-button" data-learn="shapefile">shapefile</button>
+            <button type="button" class="learn-button" data-learn="raster">raster</button>
+            <button type="button" class="learn-button" data-learn="here">here()</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="paper">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>What the paper is about</h2>
+          <p>
+            This is deliberately concise. The point here is to anchor the repo work,
+            not replace reading <a href="docs/papers/amnesty_wp.pdf">the paper</a>.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <article class="card">
+            <span class="label info">The policy</span>
+            <h3>Brazil legalized some illegal occupation of Amazon public land</h3>
+            <p>
+              In 2009, <em>Programa Terra Legal</em> offered a path to legal ownership
+              for some land-grabbers occupying federal undesignated land in the Amazon.
+              The key eligibility rule was roughly: occupation by 2004 and parcel size
+              up to 1,500 hectares. In 2017, eligibility became more generous: occupation
+              up to 2011 and areas up to 2,500 hectares
+              <button type="button" class="learn-button" data-learn="eligibility-rule">eligibility rule</button>.
+            </p>
+          </article>
+
+          <article class="card">
+            <span class="label warn">The tension</span>
+            <h3>Formalization might help, or it might create moral hazard</h3>
+            <p>
+              Supporters argued legalization could reduce conflict and improve enforcement:
+              if a parcel has a legal owner, environmental rules can bite. Critics argued
+              that forgiving past land grabbing tells people that future land invasions may
+              also be forgiven
+              <button type="button" class="learn-button" data-learn="moral-hazard">moral hazard</button>.
+            </p>
+          </article>
+        </div>
+
+        <div style="height: 16px"></div>
+
+        <div class="grid three">
+          <article class="card">
+            <span class="label ok">Main unit</span>
+            <h3>Rural parcels</h3>
+            <p>
+              The paper studies land parcels, mostly built from CAR
+              <button type="button" class="learn-button" data-learn="car">CAR</button>
+              property claims.
+              A CAR is not necessarily a legal title. It is a self-reported rural property
+              boundary, which is useful but messy because claims can overlap or be inaccurate.
+            </p>
+          </article>
+          <article class="card">
+            <span class="label ok">Main outcome</span>
+            <h3>Deforestation and occupation</h3>
+            <p>
+              MapBiomas
+              <button type="button" class="learn-button" data-learn="mapbiomas">MapBiomas</button>
+              classifies land cover for 30-by-30 meter satellite pixels. The
+              project uses those pixels to identify legacy forest, when a parcel first
+              shows human occupation, and how deforestation changes over time.
+            </p>
+          </article>
+          <article class="card">
+            <span class="label ok">Other outcomes</span>
+            <h3>Prices, titles, applications, fines</h3>
+            <p>
+              The paper also studies land prices, amnesty applications/titles, and
+              environmental fines. Those help interpret whether markets believed another
+              amnesty was likely and whether behavior changed after 2009
+              <button type="button" class="learn-button" data-learn="land-prices">land prices</button>.
+            </p>
+          </article>
+        </div>
+
+        <div style="height: 16px"></div>
+
+        <article class="card">
+          <span class="label violet">Groups in plain English</span>
+          <h3>The paper keeps comparing types of parcels</h3>
+          <div class="pill-row">
+            <span class="pill">Eligible: target land, occupied by 2004, under 1,500 ha</span>
+            <span class="pill">Ineligible: target land, but too late or too large</span>
+            <span class="pill">Never eligible: protected/control areas</span>
+            <span class="pill">Already legal: titled before the policy</span>
+            <span class="pill">Treated: eligible parcels that applied or received title</span>
+          </div>
+          <p style="margin-top: 14px">
+            The central empirical question is not only "what happened to eligible parcels?"
+            It is also "what happened to ineligible parcels after people learned the government
+            might forgive land grabbing?" That is why the repo has to carefully assign parcels
+            to policy groups
+            <button type="button" class="learn-button" data-learn="treatment-control">treatment/control</button>.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="data">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>The data sources, translated</h2>
+          <p>
+            You do not need to memorize every acronym on day one. You do need to know
+            what kind of object each source is and why the paper needs it.
+          </p>
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Source family</th>
+              <th>Plain meaning</th>
+              <th>What it lets the paper measure</th>
+              <th>Where it shows up</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>CAR / SICAR <button type="button" class="learn-button" data-learn="car">learn</button></td>
+              <td>Self-reported rural property claims and boundaries.</td>
+              <td>The parcel geography: "what land claim are we studying?" It also creates the hard cleaning problem because claims overlap <button type="button" class="learn-button" data-learn="spatial-overlap">overlap</button>.</td>
+              <td><code>data/input/sicar/</code>, <code>code/01_build/01_car/</code></td>
+            </tr>
+            <tr>
+              <td>MapBiomas <button type="button" class="learn-button" data-learn="mapbiomas">learn</button></td>
+              <td>Satellite-derived land cover classes for tiny pixels over time.</td>
+              <td>Deforestation, reforestation, and first year of human occupation inside each parcel <button type="button" class="learn-button" data-learn="raster">raster</button>.</td>
+              <td>Legacy logic in <code>legacy_repo/code/1_mapbiomas.R</code>; target home should be <code>code/01_build/04_mapbiomas/</code>.</td>
+            </tr>
+            <tr>
+              <td>Amazon biome, CNFP, glebas, protected areas</td>
+              <td>Government boundary layers: biome, public forests, undesignated land, indigenous areas, conservation units <button type="button" class="learn-button" data-learn="shapefile">shapefile</button>.</td>
+              <td>Whether a parcel is in target land, protected/control land, or outside the relevant Amazon policy geography <button type="button" class="learn-button" data-learn="spatial-join">spatial join</button>.</td>
+              <td><code>data/input/auxiliary/</code>, <code>data/input/cnfp/</code></td>
+            </tr>
+            <tr>
+              <td>SNCI, SIGEF, CAFIR, SNCR</td>
+              <td>Title-ish or administrative property records.</td>
+              <td>Which parcels are already legal or can be linked to formal title/application systems.</td>
+              <td><code>data/input/titles/</code></td>
+            </tr>
+            <tr>
+              <td>VTN, VNP, FNP, IHS Markit</td>
+              <td>Land value and land price data at municipal or regional levels.</td>
+              <td>How land markets priced eligible and ineligible land after amnesty <button type="button" class="learn-button" data-learn="vtn-vnp">VTN/VNP</button>.</td>
+              <td><code>data/input/landvalues/</code>, <code>code/01_build/02_vtn/</code>, <code>r-src/</code></td>
+            </tr>
+            <tr>
+              <td>IBAMA / DETER / fines and warnings</td>
+              <td>Environmental enforcement records and deforestation warning systems.</td>
+              <td>Robustness, enforcement intensity, turnover proxies, and illegal activity patterns.</td>
+              <td>Mostly legacy/Pedro track for now; see <code>legacy_repo/code/</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="repo-does">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>What the repo eventually needs to do</h2>
+          <p>
+            Think of the repo as a machine that turns raw data into the paper's final
+            tables and figures. The migration is about making that machine explicit,
+            runnable, and understandable
+            <button type="button" class="learn-button" data-learn="dag">why DAGs</button>.
+          </p>
+        </div>
+
+        <div class="flow" aria-label="End-to-end intended research pipeline">
+          <div class="stage info">
+            <div class="kicker">1. Inputs</div>
+            <h3>Source snapshots</h3>
+            <p>Raw or accepted source data live under <code>data/input/</code> <button type="button" class="learn-button" data-learn="folders">folders</button>.</p>
+          </div>
+          <div class="stage info">
+            <div class="kicker">2. Geography</div>
+            <h3>Clean boundaries</h3>
+            <p>Municipalities, biome, CAR parcels, target areas, and control areas <button type="button" class="learn-button" data-learn="sf">sf</button>.</p>
+          </div>
+          <div class="stage info">
+            <div class="kicker">3. Parcel types</div>
+            <h3>Assign status</h3>
+            <p>Eligible, ineligible, never eligible, already legal, treated <button type="button" class="learn-button" data-learn="treatment-control">groups</button>.</p>
+          </div>
+          <div class="stage info">
+            <div class="kicker">4. Outcomes</div>
+            <h3>Build measures</h3>
+            <p>Deforestation histories, land prices, title/applications, fines.</p>
+          </div>
+          <div class="stage info">
+            <div class="kicker">5. Analysis</div>
+            <h3>Estimate effects</h3>
+            <p>Regressions, event studies, price models, robustness checks <button type="button" class="learn-button" data-learn="did">DiD</button>.</p>
+          </div>
+          <div class="stage info">
+            <div class="kicker">6. Paper</div>
+            <h3>Tables and figures</h3>
+            <p>Everything in <code>output/</code> should be regenerable <button type="button" class="learn-button" data-learn="reproducible-output">outputs</button>.</p>
+          </div>
+        </div>
+
+        <div style="height: 16px"></div>
+
+        <div class="grid two">
+          <article class="card">
+            <span class="label ok">The final ideal</span>
+            <h3>One command rebuilds the paper pipeline</h3>
+            <p>
+              In the finished repo, a future researcher should be able to load the archived
+              Docker image <button type="button" class="learn-button" data-learn="docker">Docker</button>,
+              run <code>make all</code> <button type="button" class="learn-button" data-learn="make-all">make all</button>,
+              and regenerate the project's outputs
+              from explicit inputs without needing Leo's laptop, Pedro's Dropbox, or old
+              hidden files.
+            </p>
+          </article>
+
+          <article class="card">
+            <span class="label warn">The current reality</span>
+            <h3>The repo is mid-migration</h3>
+            <p>
+              Some pieces already follow the new structure. Many legacy pieces still assume
+              personal paths, precomputed outputs, or ambiguous file locations. Your job is
+              to keep moving code from "it once ran somewhere" to "it runs here from declared
+              inputs" <button type="button" class="learn-button" data-learn="legacy-migration">migration</button>.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="concepts">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Concepts you will need</h2>
+          <p>
+            This section is the bridge between "I can read the paper" and "I can safely
+            work on the migration."
+          </p>
+        </div>
+
+        <div class="grid">
+          <div class="concept">
+            <h3>Pipeline</h3>
+            <p>
+              A pipeline is the ordered set of steps that turns inputs into outputs. In this
+              project: raw shapefiles and spreadsheets become cleaned spatial layers, then
+              parcel classifications, then outcomes, then regressions, then paper figures.
+            </p>
+          </div>
+          <div class="concept">
+            <h3>DAG</h3>
+            <p>
+              DAG means "directed acyclic graph." Plain English: a flowchart where arrows
+              point from prerequisite to result, and there are no loops. It matters because
+              the computer can know what must run before what. If table B needs file A,
+              the DAG says so explicitly.
+            </p>
+          </div>
+          <div class="concept">
+            <h3>Docker</h3>
+            <p>
+              Docker is a sealed, reproducible mini-computer. Instead of trusting whatever
+              R/GDAL/spatial libraries happen to be installed on your laptop, the project runs
+              inside a pinned Linux environment. Here the image is <code>amazon-amnesty:dev</code>.
+            </p>
+          </div>
+          <div class="concept">
+            <h3><code>renv.lock</code></h3>
+            <p>
+              This records exact R package versions. Docker pins the operating system and
+              geospatial stack; <code>renv.lock</code> pins the R package layer. Together they
+              make the analysis reproducible.
+            </p>
+          </div>
+          <div class="concept">
+            <h3>Raw, intermediate, output</h3>
+            <p>
+              <code>data/input/</code> is for source data or documented snapshots. <code>data/intermediate/</code>
+              is for generated files needed by later steps. <code>output/</code> is for final
+              tables, figures, and results. Mixing these up is how hidden dependencies appear.
+            </p>
+          </div>
+          <div class="concept">
+            <h3>Magic file</h3>
+            <p>
+              A magic file is an input that a script needs but no script in the repo produces
+              and no documentation treats as a source snapshot. The main magic-file blocker
+              right now is <code>CleanCARShapes_robust/*.shp</code>.
+            </p>
+          </div>
+          <div class="concept">
+            <h3>Difference-in-differences</h3>
+            <p>
+              A common economics design: compare how outcomes change before vs. after a policy
+              for a group exposed to the policy, relative to a comparison group. Here, the
+              comparison group must be chosen carefully because ineligible land-grabbers may
+              change behavior if they expect future amnesty.
+            </p>
+          </div>
+          <div class="concept">
+            <h3>Raster vs. shapefile</h3>
+            <p>
+              A raster is a grid of pixels, like MapBiomas land cover. A shapefile is vector
+              geometry, like parcel boundaries or conservation areas. Much of the project is
+              overlaying rasters and shapefiles correctly.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="libraries">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Libraries and habits you will see in the R code</h2>
+          <p>
+            You do not need to become an R expert before helping. Learn the recurring
+            tools enough to recognize their role, then deepen as you touch each script.
+          </p>
+        </div>
+
+        <div class="grid three">
+          <article class="card">
+            <span class="label info">Spatial</span>
+            <h3><code>sf</code></h3>
+            <p>
+              The core spatial library for vector data: shapefiles, polygons, intersections,
+              coordinate systems, and spatial joins.
+              <button type="button" class="learn-button" data-learn="sf">learn sf</button>
+            </p>
+          </article>
+          <article class="card">
+            <span class="label info">Data wrangling</span>
+            <h3><code>dplyr</code>, <code>tidyr</code>, <code>purrr</code></h3>
+            <p>
+              These are the tidyverse tools for filtering rows, creating columns, grouping,
+              joining tables, reshaping data, and repeating an operation over many files.
+              <button type="button" class="learn-button" data-learn="tidyverse">learn tidyverse</button>
+            </p>
+          </article>
+          <article class="card">
+            <span class="label info">Paths</span>
+            <h3><code>here</code> and <code>fs</code></h3>
+            <p>
+              These keep file paths relative to the project root instead of hardcoding
+              <code>/Users/...</code> paths from someone else's computer.
+              <button type="button" class="learn-button" data-learn="here">learn paths</button>
+            </p>
+          </article>
+          <article class="card">
+            <span class="label info">Input files</span>
+            <h3><code>readr</code>, <code>readxl</code>, base R</h3>
+            <p>
+              These read CSVs, Excel files, and R-specific files like <code>.rds</code> and
+              <code>.Rdata</code>. The best practice is to make reads and writes explicit.
+              <button type="button" class="learn-button" data-learn="io">learn I/O</button>
+            </p>
+          </article>
+          <article class="card">
+            <span class="label warn">Text cleaning</span>
+            <h3><code>stringr</code> and <code>stringi</code></h3>
+            <p>
+              These normalize municipality names, accents, state codes, and other text fields
+              so joins do not fail because of spelling or encoding differences.
+              <button type="button" class="learn-button" data-learn="text-cleaning">learn text cleaning</button>
+            </p>
+          </article>
+          <article class="card">
+            <span class="label ok">Best habit</span>
+            <h3>Small scripts, explicit outputs</h3>
+            <p>
+              Each migrated script should do one job, read known inputs, write known outputs,
+              and be safe to rerun.
+              <button type="button" class="learn-button" data-learn="small-scripts">learn this habit</button>
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="repo-map">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Repo map for a newcomer</h2>
+          <p>
+            Keep two worlds separate: <code>legacy_repo/</code> is source material and forensic
+            evidence; the root repo is the new reproducible workflow.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <article class="card">
+            <span class="label ok">New structure</span>
+            <h3>Root workflow</h3>
+            <ul>
+              <li><code>Dockerfile</code> <button type="button" class="learn-button" data-learn="dockerfile">learn</button>, <code>renv.lock</code> <button type="button" class="learn-button" data-learn="renv">learn</button>, <code>Makefile</code> <button type="button" class="learn-button" data-learn="makefile">learn</button>: the reproducible environment and command menu.</li>
+              <li><code>analysis.mk</code>: the in-container DAG <button type="button" class="learn-button" data-learn="dag">learn</button>. Today, stable <code>all</code> means VTN 0-5.</li>
+              <li><code>code/01_build/01_car/</code>: CAR scaffold, currently blocked by missing upstream provenance.</li>
+              <li><code>code/01_build/02_vtn/</code>: migrated VTN chain, steps 0-8.</li>
+              <li><code>code/01_build/03_lavoura/</code>: target folder exists, but no DAG is wired.</li>
+              <li><code>code/02_analysis/</code>: placeholder; no analysis DAG yet.</li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <span class="label warn">Legacy evidence</span>
+            <h3>Legacy repo</h3>
+            <ul>
+              <li><code>legacy_repo/code/1_mapbiomas.R</code>: deforestation pixel logic and <code>transitions_combined</code> generation, but monolithic <button type="button" class="learn-button" data-learn="monolith">monolith</button>.</li>
+              <li><code>legacy_repo/code/2_empirics.R</code>: huge master script; contains CAR producer fragments and downstream empirics <button type="button" class="learn-button" data-learn="legacy-migration">migration</button>.</li>
+              <li><code>legacy_repo/code/3_policy1.R</code>: policy regressions.</li>
+              <li><code>legacy_repo/code/x_aggregate_infractions.R</code>: IBAMA infractions ingest.</li>
+              <li><code>legacy_repo/code/patricio_preach_tomas_work/</code>: Tomas/Patricio/Preach branches for VTN, Lavoura, NB, and VNP work.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="status">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Where the migration stands</h2>
+          <p>
+            Now that the vocabulary is in place, here is the practical status. Green runs;
+            amber is partly migrated or waiting; red is blocked; blue is the next track that
+            can move while waiting on the blocker.
+          </p>
+        </div>
+
+        <div class="flow" aria-label="Migration status map">
+          <div class="stage ok">
+            <div class="kicker">Stable</div>
+            <h3>VTN 0-5</h3>
+            <p>Municipality boundaries, VTN cleaning, manual fixes, IHS region CSVs, and region shapefile.</p>
+          </div>
+          <div class="stage stop">
+            <div class="kicker">Blocking</div>
+            <h3>CAR base</h3>
+            <p><code>car_combined_amazonBiome2.shp</code> depends on undocumented <code>CleanCARShapes_robust</code>.</p>
+          </div>
+          <div class="stage warn">
+            <div class="kicker">Migrated, unrun</div>
+            <h3>VTN 6-8</h3>
+            <p>CAR-to-IHS and parcel-level VTN joins. Waiting for CAR outputs.</p>
+          </div>
+          <div class="stage info">
+            <div class="kicker">Next candidate</div>
+            <h3>MapBiomas</h3>
+            <p>Core raw-to-transition raster logic exists in <code>1_mapbiomas.R</code>; needs modularization.</p>
+          </div>
+          <div class="stage warn">
+            <div class="kicker">Deferred</div>
+            <h3>Lavoura, NB/VNP</h3>
+            <p>Mostly blocked by CAR and output-as-input coupling.</p>
+          </div>
+          <div class="stage violet">
+            <div class="kicker">Deferred</div>
+            <h3>Pedro empirics</h3>
+            <p>Large downstream scripts need upstream build stages first.</p>
+          </div>
+        </div>
+
+        <div style="height: 16px"></div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Status</th>
+              <th>What to know</th>
+              <th>Main files</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Environment</td>
+              <td><span class="label ok">Pinned</span></td>
+              <td>Docker image <code>amazon-amnesty:dev</code> uses <code>rocker/geospatial:4.5.3</code> by digest, fixed CRAN snapshot <code>2026-05-03</code>, <code>PROJ_NETWORK=OFF</code>, single-threaded math libraries, and <code>sf_use_s2(TRUE)</code> <button type="button" class="learn-button" data-learn="s2">s2</button>.</td>
+              <td><code>Dockerfile</code>, <code>renv.lock</code></td>
+            </tr>
+            <tr>
+              <td>VTN 0-5</td>
+              <td><span class="label ok">Runnable</span></td>
+              <td>Current stable DAG. Manual fix sheets are intentional curated inputs <button type="button" class="learn-button" data-learn="manual-inputs">manual inputs</button>, not accidental magic files.</td>
+              <td><code>code/01_build/02_vtn/0-5_*.R</code>, <code>data/input/manual/vtn/</code></td>
+            </tr>
+            <tr>
+              <td>VTN correction idempotency</td>
+              <td><span class="label warn">Known hazard</span></td>
+              <td><code>3_unmatched_vtn_correction.R</code> asserts a 2015 row delta of <code>-1</code>; a re-run against already patched files can fail. Replace the delta check with post-condition invariants <button type="button" class="learn-button" data-learn="invariant">invariant</button> in a future cleanup.</td>
+              <td><code>PROBLEMS.md</code> section 2; <code>legacy_repo/PROBLEMS.md</code> section 6A</td>
+            </tr>
+            <tr>
+              <td>CAR</td>
+              <td><span class="label stop">Blocked</span></td>
+              <td>The clean CAR builder expects <code>data/input/sicar/car_combined_amazonBiome2.shp</code>. Legacy code shows it was derived from <code>CleanCARShapes_robust/*.shp</code>, whose cleaning code is not in the repo <button type="button" class="learn-button" data-learn="magic-file">magic file</button>.</td>
+              <td><code>code/01_build/01_car/0_build_car_layers_from_raw.R</code>, <code>legacy_repo/code/2_empirics.R</code></td>
+            </tr>
+            <tr>
+              <td>MapBiomas</td>
+              <td><span class="label info">Next independent track</span></td>
+              <td>Core <code>transitions_combined</code> generation lives in the legacy script. It is messy but not a black box. Start by extracting the raw-only backbone.</td>
+              <td><code>legacy_repo/code/1_mapbiomas.R</code>; target <code>code/01_build/04_mapbiomas/</code></td>
+            </tr>
+            <tr>
+              <td>Lavoura, NB/VNP, Pedro empirics</td>
+              <td><span class="label warn">Deferred</span></td>
+              <td>These are blocked by CAR under the gradual-migration rule. They also contain output-as-input coupling and absolute path edges that will need explicit DAG boundaries.</td>
+              <td><code>legacy_repo/code/patricio_preach_tomas_work/</code>, <code>legacy_repo/code/2_empirics.R</code>, <code>legacy_repo/code/3_policy1.R</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="blockers">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>The blocker that matters most</h2>
+          <p>
+            Lots of files are messy. The big conceptual blocker is narrower:
+            the CAR chain bottoms out on an undocumented cleaned shapefile set.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <div class="callout stop">
+            <h3>Recover or decide <code>CleanCARShapes_robust</code></h3>
+            <p>
+              Legacy code combines Thiago's cleaned per-state CAR shapefiles, intersects
+              them with the Amazon biome, and writes <code>car_combined_amazonBiome2.shp</code>.
+              The cleaning step itself is not in the repo
+              <button type="button" class="learn-button" data-learn="clean-car">why this blocks</button>.
+            </p>
+          </div>
+          <div class="callout warn">
+            <h3>Possible resolutions</h3>
+            <p>
+              Either recover Thiago's cleaning workflow, accept the cleaned shapefiles as a
+              documented source snapshot, or decide to skip that cleaning and build from raw
+              SICAR shapefiles. Each choice changes the reproducibility story
+              <button type="button" class="learn-button" data-learn="provenance">provenance</button>.
+            </p>
+          </div>
+          <div class="callout info">
+            <h3>What to do while waiting</h3>
+            <p>
+              Migrate the independent MapBiomas backbone: MapBiomas TIFF plus Amazon biome
+              border to grids, legacy forest, transitions, and <code>transitions_combined</code>
+              <button type="button" class="learn-button" data-learn="mapbiomas-migration">how to start</button>.
+            </p>
+          </div>
+          <div class="callout ok">
+            <h3>What not to do</h3>
+            <p>
+              Do not wire downstream scripts by copying hidden outputs into place. That makes
+              the repo look better while preserving the actual reproducibility problem
+              <button type="button" class="learn-button" data-learn="hidden-state">hidden state</button>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="commands">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Commands, without assuming you love terminals</h2>
+          <p>
+            You do not need to understand every flag. You do need to use the right entry
+            points so the project runs in the reproducible environment.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <article class="card">
+            <span class="label ok">Use these</span>
+            <h3>The project command menu</h3>
+            <pre><code>make docker-build
+make all
+make docker-boot   # human interactive shell
+make docker-run CMD="Rscript code/01_build/02_vtn/0_clean_muni_boundaries.R"
+make docker-run CMD="make -f analysis.mk 02_vtn"
+make docker-run CMD="make -f analysis.mk help"</code></pre>
+            <p style="margin-top: 12px">
+              <code>make</code> is just a shortcut menu. The Makefile hides long Docker commands
+              behind memorable names
+              <button type="button" class="learn-button" data-learn="makefile">Makefile</button>.
+            </p>
+          </article>
+
+          <article class="card">
+            <span class="label stop">Avoid these</span>
+            <h3>They bypass or weaken reproducibility</h3>
+            <pre><code>Rscript code/01_build/02_vtn/0_clean_muni_boundaries.R
+Rscript r-src/map_vnp_prices.R
+docker run -it amazon-amnesty:dev bash
+install.packages("newpackage")  # inside a running container</code></pre>
+            <p style="margin-top: 12px">
+              The first two run R on your laptop instead of inside Docker. The last one installs
+              a package in a temporary container layer that disappears and is not recorded
+              <button type="button" class="learn-button" data-learn="container-layer">container layer</button>.
+            </p>
+          </article>
+        </div>
+
+        <div style="height: 16px"></div>
+
+        <article class="card">
+          <span class="label warn">When a package is missing</span>
+          <h3>The package dance</h3>
+          <ol>
+            <li>On the host only: <code>Rscript -e "install.packages('somepackage'); renv::snapshot()"</code> <button type="button" class="learn-button" data-learn="renv">why</button>.</li>
+            <li>Rebuild the image: <code>make docker-build</code> <button type="button" class="learn-button" data-learn="docker-build">why rebuild</button>.</li>
+            <li>Verify in Docker: <code>make docker-run CMD="Rscript -e \"library(somepackage); cat('ok\n')\""</code>.</li>
+          </ol>
+        </article>
+      </div>
+    </section>
+
+    <section id="first-week">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Your first-week path</h2>
+          <p>
+            This is the order I would follow if I were taking over without already being
+            fluent in the project.
+          </p>
+        </div>
+
+        <ul class="checklist">
+          <li>
+            <span class="box"></span>
+            <div><strong>Read this page once top to bottom.</strong><span>Do not worry if some names blur together. The point is to build a first map.</span></div>
+          </li>
+          <li>
+            <span class="box"></span>
+            <div><strong>Read the paper introduction and setting/data section.</strong><span>Use <a href="docs/papers/amnesty_wp.pdf">the PDF</a> and keep the group definitions nearby: eligible, ineligible, never eligible, already legal.</span></div>
+          </li>
+          <li>
+            <span class="box"></span>
+            <div><strong>Read the migration record.</strong><span>Start with <a href="docs/notes/checkpoints/checkpoint-20260506.md">checkpoint-20260506.md</a>, then <a href="PROBLEMS.md">PROBLEMS.md</a>, then <a href="legacy_repo/PROBLEMS.md">legacy_repo/PROBLEMS.md</a>.</span></div>
+          </li>
+          <li>
+            <span class="box"></span>
+            <div><strong>Build or refresh Docker.</strong><span>Run <code>make docker-build</code> after confirming Docker Desktop is running <button type="button" class="learn-button" data-learn="docker-build">build</button>.</span></div>
+          </li>
+          <li>
+            <span class="box"></span>
+            <div><strong>Run the stable surface.</strong><span>Use <code>make all</code> or <code>make docker-run CMD="make -f analysis.mk 02_vtn"</code>. Expect VTN 0-5, not the full paper pipeline.</span></div>
+          </li>
+          <li>
+            <span class="box"></span>
+            <div><strong>Ask Pedro/Thiago about CAR provenance.</strong><span>Specifically ask for the <code>CleanCARShapes_robust</code> workflow, execution order, overlap rules, validation rules, filters, and manual edits.</span></div>
+          </li>
+          <li>
+            <span class="box"></span>
+            <div><strong>Start MapBiomas migration while waiting.</strong><span>Create <code>code/01_build/04_mapbiomas/</code> and extract one raw-only step at a time from <code>legacy_repo/code/1_mapbiomas.R</code>.</span></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="sources">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Source files behind this page</h2>
+          <p>
+            This onboarding is a synthesis of the repo's own notes and manuscript. When in
+            doubt, update the underlying notes first and then refresh this page.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <article class="card">
+            <h3>Paper and project context</h3>
+            <ul>
+              <li><a href="docs/papers/amnesty_wp.pdf"><code>docs/papers/amnesty_wp.pdf</code></a></li>
+              <li><a href="docs/papers/manuscript_20260423.tex"><code>docs/papers/manuscript_20260423.tex</code></a></li>
+              <li><a href="docs/tex/fnp_data_aggregation_methodology.pdf"><code>docs/tex/fnp_data_aggregation_methodology.pdf</code></a></li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Migration and operations</h3>
+            <ul>
+              <li><a href="docs/notes/checkpoints/checkpoint-20260506.md"><code>docs/notes/checkpoints/checkpoint-20260506.md</code></a></li>
+              <li><a href="PROBLEMS.md"><code>PROBLEMS.md</code></a></li>
+              <li><a href="legacy_repo/PROBLEMS.md"><code>legacy_repo/PROBLEMS.md</code></a></li>
+              <li><a href="AGENTS.md"><code>AGENTS.md</code></a> and <a href="CLAUDE.md"><code>CLAUDE.md</code></a></li>
+              <li><a href="docs/notes/docker-for-empirical-projects.md"><code>docs/notes/docker-for-empirical-projects.md</code></a></li>
+              <li><a href="Dockerfile"><code>Dockerfile</code></a>, <a href="Makefile"><code>Makefile</code></a>, <a href="analysis.mk"><code>analysis.mk</code></a></li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      Last synthesized from repo notes and manuscript context on 2026-06-03. Keep this page
+      close to the migration record: when a blocker is resolved, update <code>PROBLEMS.md</code>,
+      <code>analysis.mk</code>, and this onboarding together.
+    </div>
+  </footer>
+
+  <div class="learning-shell" id="learningShell" hidden>
+    <div class="learning-backdrop" data-close-learning></div>
+    <aside class="learning-drawer" aria-modal="true" aria-labelledby="lessonTitle" role="dialog">
+      <div class="learning-head">
+        <div>
+          <p id="lessonTag">Learning balloon</p>
+          <h2 id="lessonTitle">Concept</h2>
+        </div>
+        <button type="button" class="learning-close" data-close-learning aria-label="Close learning panel">&times;</button>
+      </div>
+      <div class="learning-body" id="lessonBody"></div>
+    </aside>
+  </div>
+
+  <script>
+    const lessons = {
+      "pipeline": {
+        tag: "Workflow concept",
+        title: "Pipeline",
+        quick: "A pipeline is the ordered path from inputs to final outputs.",
+        why: "Here, the pipeline should turn raw spatial data and spreadsheets into cleaned files, then parcel classifications, then outcomes, then tables and figures for the paper.",
+        do: "When migrating a script, ask: what files does this step read, what files does it write, and which later step needs those outputs?",
+        trap: "Do not treat a script as migrated just because it runs once. It belongs in the pipeline only when its inputs and outputs are explicit."
+      },
+      "dag": {
+        tag: "Workflow concept",
+        title: "DAG",
+        quick: "DAG means directed acyclic graph. Think flowchart with arrows and no loops.",
+        why: "The project needs a DAG so the computer knows that, for example, VTN corrections happen before VTN region summaries, and CAR layers exist before parcel-level joins.",
+        do: "In this repo, the DAG is written in <code>analysis.mk</code>. Each target says: to make output X, run script Y after prerequisites Z exist.",
+        trap: "If a script reads a file that is not listed as a prerequisite, the DAG is lying by omission."
+      },
+      "docker": {
+        tag: "Reproducibility",
+        title: "Docker",
+        quick: "Docker is a sealed mini-computer with the exact R and geospatial libraries this project expects.",
+        why: "Spatial results can change when GDAL, GEOS, PROJ, <code>sf</code>, or R package versions change. Docker freezes that environment.",
+        do: "Run project R code through <code>make all</code> or <code>make docker-run CMD=\"...\"</code>. Humans can use <code>make docker-boot</code> for an interactive shell.",
+        trap: "Running <code>Rscript</code> directly on your laptop uses your laptop's R, not the project environment."
+      },
+      "spatial-data": {
+        tag: "Data concept",
+        title: "Spatial data",
+        quick: "Spatial data are data with geography: points, lines, polygons, or pixels tied to places on Earth.",
+        why: "This project is spatial all the way down: property claims, protected lands, Amazon biome boundaries, municipalities, and satellite pixels.",
+        do: "Expect many operations to mean 'overlay this geography with that one' or 'measure how much of this parcel intersects that area.'",
+        trap: "Spatial data must use compatible coordinate reference systems. With <code>sf</code>, you will often see <code>st_transform()</code> to handle this."
+      },
+      "moral-hazard": {
+        tag: "Economics concept",
+        title: "Moral hazard",
+        quick: "Moral hazard is when forgiving or insuring behavior changes future incentives.",
+        why: "The paper asks whether amnesty made ineligible land-grabbers expect future forgiveness, encouraging more land grabbing or deforestation.",
+        do: "Keep eligible and ineligible groups conceptually separate. Ineligible parcels are not just controls; they may be affected through expectations.",
+        trap: "Do not casually combine ineligible and never-eligible parcels. They play different roles in the empirical design."
+      },
+      "folders": {
+        tag: "Repo habit",
+        title: "Raw, intermediate, output",
+        quick: "<code>data/input</code> is source data, <code>data/intermediate</code> is generated working data, and <code>output</code> is final results.",
+        why: "This separation lets someone trace where every file came from.",
+        do: "When migrating, write generated build products to <code>data/intermediate</code> or <code>data/clean</code>, and paper-ready figures/tables to <code>output</code>.",
+        trap: "Do not put derived files in <code>data/input</code> unless the team explicitly accepts them as documented source snapshots."
+      },
+      "makefile": {
+        tag: "Tooling",
+        title: "Makefile",
+        quick: "A Makefile stores named project commands and, when needed, the dependencies between files those commands create.",
+        why: "The root <code>Makefile</code> hides Docker commands behind simple names. <code>analysis.mk</code> is the in-container pipeline.",
+        do: "Use <code>make docker-run CMD=\"...\"</code> for one command in Docker, and <code>make all</code> for the current stable pipeline.",
+        trap: "Makefiles require tabs for recipe lines. Spaces can break them in confusing ways."
+      },
+      "renv": {
+        tag: "R environment",
+        title: "renv.lock",
+        quick: "<code>renv.lock</code> records exact R package versions.",
+        why: "Docker freezes the system environment; <code>renv.lock</code> freezes R packages. Both are needed for long-run reproducibility.",
+        do: "If a package is missing, install and snapshot on the host, rebuild Docker, then verify inside Docker.",
+        trap: "Do not run <code>install.packages()</code> inside the container. That installation disappears and is not recorded."
+      },
+      "shapefile": {
+        tag: "Spatial data",
+        title: "Shapefile",
+        quick: "A shapefile is a vector spatial dataset, usually a set of files like <code>.shp</code>, <code>.dbf</code>, <code>.shx</code>, and <code>.prj</code>.",
+        why: "CAR parcels, protected areas, municipalities, and biome boundaries are often shapefiles.",
+        do: "Read them in R with <code>sf::st_read()</code>. Keep all companion files together; the <code>.shp</code> alone is not enough.",
+        trap: "Moving only one file from a shapefile bundle breaks it."
+      },
+      "raster": {
+        tag: "Spatial data",
+        title: "Raster",
+        quick: "A raster is a grid of pixels. Each pixel stores a value.",
+        why: "MapBiomas is raster-like: each 30-by-30 meter pixel has a land-cover class for each year.",
+        do: "The MapBiomas migration will turn pixel classes into forest/deforestation transitions and then aggregate them to parcels.",
+        trap: "Raster work can be huge. Be careful with memory, chunking, and exact file paths."
+      },
+      "here": {
+        tag: "Repo habit",
+        title: "here() and project-relative paths",
+        quick: "<code>here::here()</code> builds paths from the project root.",
+        why: "It prevents scripts from depending on Leo's or Pedro's personal folders.",
+        do: "Use <code>here(\"data\", \"input\", \"...\")</code> instead of <code>/Users/someone/Dropbox/...</code>.",
+        trap: "If you see hardcoded home-directory paths in legacy scripts, that is a migration target."
+      },
+      "eligibility-rule": {
+        tag: "Paper concept",
+        title: "Eligibility rule",
+        quick: "The 2009 policy eligibility rule is roughly: target land, occupied by 2004, and under 1,500 hectares.",
+        why: "The repo has to turn spatial and satellite data into these ingredients: where the parcel is, when occupation began, and how large the occupied area is.",
+        do: "When reading code, map each variable back to one of those ingredients.",
+        trap: "CAR area and actual occupied area can differ. That measurement issue is part of why the paper is hard."
+      },
+      "car": {
+        tag: "Data source",
+        title: "CAR / SICAR",
+        quick: "CAR is Brazil's Rural Environmental Registry. SICAR is the system behind it.",
+        why: "CAR gives parcel boundaries, but they are self-reported claims, not guaranteed legal titles.",
+        do: "Treat CAR as a starting geography that needs validation, cleaning, overlap handling, and links to other data.",
+        trap: "Do not assume a CAR means legal ownership. In this paper that distinction is central."
+      },
+      "mapbiomas": {
+        tag: "Data source",
+        title: "MapBiomas",
+        quick: "MapBiomas classifies land cover from satellite imagery over time.",
+        why: "The project uses it to measure legacy forest, deforestation, reforestation, and first occupation year.",
+        do: "The migration target is to extract the core raw-to-transition logic from <code>legacy_repo/code/1_mapbiomas.R</code> into smaller build scripts.",
+        trap: "Do not treat <code>transitions_combined</code> as raw input. It is a derived output that should have a producer."
+      },
+      "land-prices": {
+        tag: "Paper concept",
+        title: "Land prices",
+        quick: "Land prices help show how markets valued eligibility and future amnesty expectations.",
+        why: "If ineligible land rises in value after amnesty, that can indicate people priced in future legalization.",
+        do: "Look for VTN/VNP/FNP/IHS data when working on price-related pipeline pieces.",
+        trap: "Price data are often regional, not parcel-level, so aggregation and matching choices matter."
+      },
+      "treatment-control": {
+        tag: "Econometrics concept",
+        title: "Treatment and control groups",
+        quick: "A treatment group is exposed to the policy or mechanism of interest. A control group is the comparison.",
+        why: "This paper distinguishes eligible, ineligible, never-eligible, treated, and already legal parcels because each answers a different question.",
+        do: "When a script labels parcels, check that the labels match the paper's definitions.",
+        trap: "A bad control group can make a clean-looking regression scientifically misleading."
+      },
+      "spatial-overlap": {
+        tag: "Spatial data",
+        title: "Spatial overlap",
+        quick: "Overlap means two polygons cover some of the same land.",
+        why: "CAR claims often overlap. If the repo ignores that, it can double-count land and deforestation.",
+        do: "Expect functions like <code>st_intersection()</code>, <code>st_union()</code>, and area shares.",
+        trap: "Overlap rules are substantive. Do not change thresholds casually."
+      },
+      "spatial-join": {
+        tag: "Spatial data",
+        title: "Spatial join",
+        quick: "A spatial join attaches information based on geography instead of matching IDs.",
+        why: "Example: attach an IHS price region to a CAR parcel based on which region the parcel intersects.",
+        do: "In <code>sf</code>, look for <code>st_join()</code> or explicit intersections.",
+        trap: "Spatial joins can duplicate rows when one polygon intersects multiple polygons. Always check counts."
+      },
+      "vtn-vnp": {
+        tag: "Data source",
+        title: "VTN / VNP / FNP",
+        quick: "These are land value/price data sources used to study land markets.",
+        why: "They help connect policy eligibility shares to regional land price changes.",
+        do: "The stable migrated path today is VTN steps 0-5. Other land-price paths are still less settled.",
+        trap: "Do not assume all price datasets use the same geography or naming conventions."
+      },
+      "sf": {
+        tag: "R library",
+        title: "sf",
+        quick: "<code>sf</code> is the main R package for vector spatial data.",
+        why: "It reads shapefiles, transforms coordinate systems, fixes geometries, intersects polygons, and writes spatial outputs.",
+        do: "Common functions: <code>st_read()</code>, <code>st_write()</code>, <code>st_transform()</code>, <code>st_make_valid()</code>, <code>st_intersection()</code>.",
+        trap: "The same code can behave differently with different GDAL/GEOS/PROJ versions, which is why Docker matters."
+      },
+      "did": {
+        tag: "Econometrics concept",
+        title: "Difference-in-differences",
+        quick: "Compare before-vs-after changes in one group to before-vs-after changes in another group.",
+        why: "The paper uses this logic to estimate how eligible and ineligible parcels changed after the 2009 amnesty relative to never-eligible parcels.",
+        do: "You do not need to solve the model to migrate code, but you should preserve group labels, time windows, and outcomes exactly.",
+        trap: "Changing sample definitions can change the estimand even if the code still runs."
+      },
+      "reproducible-output": {
+        tag: "Best practice",
+        title: "Regenerable outputs",
+        quick: "A final figure/table should be produced by code, not hand-copied into existence.",
+        why: "The goal is for a future person to regenerate the paper from the repo and archived environment.",
+        do: "Trace each output backward: output file, script, intermediate inputs, raw/source inputs.",
+        trap: "A pretty figure in <code>output/</code> is not enough if nobody can regenerate it."
+      },
+      "make-all": {
+        tag: "Command",
+        title: "make all",
+        quick: "<code>make all</code> runs the current stable top-level pipeline through Docker.",
+        why: "Right now, stable <code>all</code> means VTN 0-5, not the full paper.",
+        do: "Use it as a smoke test for the part of the repo that is currently wired and expected to run.",
+        trap: "Do not interpret <code>make all</code> passing as 'the whole paper is reproducible' yet."
+      },
+      "legacy-migration": {
+        tag: "Migration habit",
+        title: "Migrating legacy code",
+        quick: "Migration means turning old code into explicit, runnable pipeline stages without changing the science.",
+        why: "Legacy code has personal paths, hidden outputs, and mixed exploratory blocks. The new repo needs clean dependencies.",
+        do: "Extract one responsibility at a time, use project-relative paths, write explicit outputs, add a DAG target, then validate.",
+        trap: "Do not refactor everything at once. Big rewrites make it impossible to know what changed."
+      },
+      "tidyverse": {
+        tag: "R libraries",
+        title: "dplyr, tidyr, purrr",
+        quick: "These are R tools for data wrangling.",
+        why: "Most non-spatial cleaning is filtering rows, joining tables, grouping, summarizing, reshaping, or mapping over files.",
+        do: "Read pipelines left-to-right: data goes in, each verb transforms it, output comes out.",
+        trap: "Joins can silently duplicate rows if keys are not unique. Check row counts before and after."
+      },
+      "io": {
+        tag: "Coding habit",
+        title: "Input and output",
+        quick: "I/O means reading files and writing files.",
+        why: "A pipeline is only trustworthy when reads and writes are obvious.",
+        do: "At the top of a migrated script, identify input paths and output paths. At the end, write outputs intentionally.",
+        trap: "Avoid scripts that read whatever happens to be in a folder unless the file list is itself a declared input."
+      },
+      "text-cleaning": {
+        tag: "R libraries",
+        title: "Text cleaning",
+        quick: "Text cleaning makes names comparable: accents, capitalization, spaces, and spelling variants.",
+        why: "Brazilian municipality and region names can fail to match because of accents or formatting.",
+        do: "Look for <code>stringi::stri_trans_general()</code>, <code>str_to_upper()</code>, and <code>str_squish()</code>.",
+        trap: "A text fix can be substantive if it changes which municipality a record matches. Document manual corrections."
+      },
+      "small-scripts": {
+        tag: "Best practice",
+        title: "Small scripts, explicit outputs",
+        quick: "A good build script has one job.",
+        why: "Small scripts are easier to test, rerun, and connect in a DAG.",
+        do: "Name scripts by stage, keep exploratory plots separate, and make each output path clear.",
+        trap: "A monolithic script can hide dependencies between blocks that only work because they ran in one R session."
+      },
+      "dockerfile": {
+        tag: "Docker file",
+        title: "Dockerfile",
+        quick: "A Dockerfile is the recipe for building the Docker image.",
+        why: "It pins the base image, CRAN snapshot, geospatial settings, threading, and package restore behavior.",
+        do: "Only edit it when the environment really needs to change, then run <code>make docker-build</code>.",
+        trap: "Changing pinned versions changes the reproducibility contract."
+      },
+      "monolith": {
+        tag: "Code shape",
+        title: "Monolithic script",
+        quick: "A monolith is one huge script that does many unrelated things.",
+        why: "<code>1_mapbiomas.R</code> and <code>2_empirics.R</code> mix build logic, exploratory code, plots, and analysis.",
+        do: "Split monoliths into build stages with clear inputs and outputs.",
+        trap: "Do not delete exploratory blocks until you understand whether they contain hidden producer logic."
+      },
+      "s2": {
+        tag: "Spatial setting",
+        title: "sf s2 engine",
+        quick: "The s2 engine changes how <code>sf</code> handles spherical geometry.",
+        why: "Spatial calculations on Earth are not always simple flat-plane math. The project pins <code>sf_use_s2(TRUE)</code> for consistency.",
+        do: "Do not toggle s2 casually just to make a script run.",
+        trap: "Changing s2 behavior can subtly change intersections and areas."
+      },
+      "manual-inputs": {
+        tag: "Data practice",
+        title: "Manual correction sheets",
+        quick: "Manual inputs are curated source files created by humans to fix known data issues.",
+        why: "The VTN chain uses manual CSVs to map unmatched municipality names to codes.",
+        do: "Keep them under <code>data/input/manual/</code> and document what each correction does.",
+        trap: "Manual does not mean sloppy. It means explicit, reviewable, and stable."
+      },
+      "invariant": {
+        tag: "Testing idea",
+        title: "Invariant",
+        quick: "An invariant is a condition that should be true after a step finishes.",
+        why: "It is safer than checking how many rows happened to change in one run.",
+        do: "Example: after the 2015 VTN correction, no row should remain with state EX and municipality EXTERIOR.",
+        trap: "A row-count delta can fail on rerun even when the final data are correct."
+      },
+      "magic-file": {
+        tag: "Migration problem",
+        title: "Magic file",
+        quick: "A magic file is required by code but has no producer and no accepted source documentation.",
+        why: "<code>CleanCARShapes_robust/*.shp</code> is the critical magic-file problem in this repo.",
+        do: "Either recover its producer workflow or formally accept it as a source snapshot with provenance.",
+        trap: "Copying a magic file into place hides the problem instead of solving it."
+      },
+      "clean-car": {
+        tag: "Current blocker",
+        title: "CleanCARShapes_robust",
+        quick: "This is a set of cleaned CAR shapefiles referenced by legacy code but not produced in the repo.",
+        why: "Downstream CAR, VTN 6-8, Lavoura, NB/VNP, and Pedro tracks need CAR outputs.",
+        do: "Ask Pedro/Thiago for the cleaning scripts, folder, order of operations, validation rules, overlap rules, filters, and manual edits.",
+        trap: "If the cleaning code cannot be recovered, the team must make an explicit snapshot decision."
+      },
+      "provenance": {
+        tag: "Research practice",
+        title: "Provenance",
+        quick: "Provenance means knowing where a file came from and how it was made.",
+        why: "A reproducible paper needs provenance for every nontrivial input and intermediate.",
+        do: "For each file, ask: source download, manual input, or produced by which script?",
+        trap: "A file being 'on disk' is not provenance."
+      },
+      "mapbiomas-migration": {
+        tag: "Next task",
+        title: "Starting MapBiomas migration",
+        quick: "Start with the raw-only backbone before touching downstream analysis.",
+        why: "The checkpoint says this track can move independently of the CAR blocker.",
+        do: "Create <code>code/01_build/04_mapbiomas/</code>. Extract one stage at a time: raw TIFF plus biome border, grids, legacy forest, transitions, <code>transitions_combined</code>.",
+        trap: "Do not pull in late validation plots or CAR-dependent blocks before the core producer chain is clean."
+      },
+      "hidden-state": {
+        tag: "Migration problem",
+        title: "Hidden bootstrap state",
+        quick: "Hidden state means the code works only because some precomputed file already exists somewhere.",
+        why: "Legacy scripts read files from Dropbox, home directories, external disks, and <code>output/</code> paths.",
+        do: "Replace hidden state with explicit source inputs or producer scripts.",
+        trap: "A script that runs on one laptop may still be unreproducible from a clean checkout."
+      },
+      "container-layer": {
+        tag: "Docker concept",
+        title: "Container writable layer",
+        quick: "A running container has a temporary writable layer that disappears when the container exits.",
+        why: "Installing packages inside a container writes to that temporary layer, not to the reproducible image recipe.",
+        do: "Record package changes in <code>renv.lock</code>, rebuild the image, then rerun.",
+        trap: "If you install inside the container, it may work today and vanish tomorrow."
+      },
+      "docker-build": {
+        tag: "Command",
+        title: "make docker-build",
+        quick: "This rebuilds the project Docker image from the Dockerfile and <code>renv.lock</code>.",
+        why: "After environment changes, the image must be rebuilt so future container runs use the new pinned setup.",
+        do: "Run after editing <code>Dockerfile</code>, <code>renv.lock</code>, or relevant image-copy behavior.",
+        trap: "You do not need to rebuild after ordinary R script edits because the repo is bind-mounted into the container."
+      }
+    };
+
+    Object.assign(lessons, {
+      "makefile": {
+        tag: "Tooling",
+        title: "Makefile",
+        html: `
+          <p>The main value of a <code>Makefile</code> is that it lets the project write down dependency structure in a form the computer can use.</p>
+          <p>In a research pipeline, outputs depend on earlier outputs. A table might depend on a cleaned dataset; that cleaned dataset might depend on a raw spreadsheet and a manual correction file; a later map might depend on several cleaned spatial layers. A Makefile rule can say: "this output is made from these prerequisites, using this command."</p>
+          <div class="lesson-example"><code>data/clean/vtn/vtn_2015_clean.rds</code><br><span class="mini">depends on</span><br><code>data/input/landvalues/vtn/vtn_2015.rds</code> + <code>code/01_build/02_vtn/2_clean_vtn_data.R</code></div>
+          <p>Once those relationships are written down, <code>make</code> can run only the necessary parts of the DAG. If an upstream file is already current, it does not need to be rebuilt. If a prerequisite changed, Make knows which downstream targets are now stale. That is the real payoff: fewer accidental reruns, fewer missing steps, and a pipeline whose logic is visible.</p>
+          <p>Only after that comes the convenience benefit: Makefiles also give humans short commands. Instead of typing a long Docker command, you can type <code>make all</code>, <code>make docker-build</code>, or <code>make docker-run CMD="..."</code>.</p>
+          <p>In this repo, <code>analysis.mk</code> is where the analysis DAG is being built. The root <code>Makefile</code> is mostly the friendly outer layer that runs those targets through Docker.</p>
+          <div class="lesson-note">Tiny but real gotcha: Makefile recipe lines must start with a tab, not spaces. It is one of those ancient computer customs that still bites people.</div>
+        `
+      },
+      "dag": {
+        tag: "Workflow concept",
+        title: "DAG",
+        html: `
+          <p>A DAG is a map of what depends on what. The letters mean "directed acyclic graph," but the useful translation is: a flowchart where arrows point from prerequisite to result, and the arrows never loop back on themselves.</p>
+          <p>Why does that matter? Because a research project is not one command. It is many steps: clean municipality boundaries, clean land values, apply manual fixes, create region files, match parcels to regions, estimate models, write tables. If those steps are not mapped, people run them in the wrong order or rely on old files without noticing.</p>
+          <div class="lesson-example"><code>raw VTN PDFs/RDS -> cleaned VTN files -> manual corrections -> region CSVs -> price analysis</code></div>
+          <p>A good DAG lets the computer say: "this file is missing, so I need to run the script that creates it," or "this upstream input changed, so this downstream output is stale."</p>
+          <p>In this repo, <code>analysis.mk</code> is where this is written down. Right now it only wires the stable VTN 0-5 chain and some blocked CAR-dependent targets. The long-run goal is for the whole paper pipeline to live there or in the same style.</p>
+        `
+      },
+      "docker": {
+        tag: "Reproducibility",
+        title: "Docker",
+        html: `
+          <p>R code does not run in a vacuum. It runs with a particular R version, package versions, GDAL, GEOS, PROJ, system libraries, and operating-system behavior. For spatial work, tiny differences in that stack can change geometry operations.</p>
+          <p>Docker solves this by packaging the computing environment. You can think of the Docker image as a frozen workbench: same R, same geospatial libraries, same package versions, same settings. The container is a temporary run of that workbench.</p>
+          <p>That is why this project refuses to run R scripts directly on the host. Your laptop's R might be fine for other work, but it is not the pinned environment for this paper.</p>
+          <div class="lesson-example"><code>make docker-run CMD="Rscript code/01_build/02_vtn/0_clean_muni_boundaries.R"</code></div>
+          <p>That command says: start the project Docker image, mount the repo into it, run the R script inside the container, then exit. Outputs still appear in your project folder because the folder is bind-mounted.</p>
+        `
+      },
+      "pipeline": {
+        tag: "Workflow concept",
+        title: "Pipeline",
+        html: `
+          <p>A pipeline is the whole path from source data to final results. In this project, raw shapefiles, satellite data, PDFs, spreadsheets, and manual correction sheets become cleaned data, parcel classifications, outcomes, regressions, and paper figures.</p>
+          <p>The important habit is to ask, for every step: what does it read, what does it write, and who uses what it writes?</p>
+          <p>Migration is mostly the act of making those answers explicit. A script that once worked because Pedro had a file in Dropbox is not yet a pipeline stage. A script becomes a stage when its inputs are declared, its outputs are stable, and it can be rerun inside Docker.</p>
+        `
+      },
+      "folders": {
+        tag: "Repo habit",
+        title: "Raw, intermediate, output",
+        html: `
+          <p>The folder names are trying to prevent confusion about what a file is.</p>
+          <ul>
+            <li><code>data/input/</code> is for raw source data or documented source snapshots.</li>
+            <li><code>data/intermediate/</code> and <code>data/clean/</code> are for files produced by the pipeline and used by later steps.</li>
+            <li><code>output/</code> is for final tables, figures, and results.</li>
+          </ul>
+          <p>The project got into trouble partly because legacy code sometimes treated <code>output/</code> as an input folder, or put derived files under paths that looked like source data. Once those categories blur, it becomes hard to know what can be regenerated.</p>
+        `
+      },
+      "provenance": {
+        tag: "Research practice",
+        title: "Provenance",
+        html: `
+          <p>Provenance means the story of where a file came from. For this project, every important file should have one of three stories: it is a raw/source download, it is a curated manual input, or it is produced by a specific script in the repo.</p>
+          <p>This matters because a replication package is not just "the files happen to be here." It is a claim that someone else can understand and rebuild the analysis.</p>
+          <p>The current CAR blocker is a provenance problem. <code>CleanCARShapes_robust/*.shp</code> may be scientifically useful, but the repo does not yet know how those shapefiles were made.</p>
+        `
+      },
+      "renv": {
+        tag: "R environment",
+        title: "renv.lock",
+        html: `
+          <p>R projects use packages, and packages change over time. <code>renv.lock</code> records the exact package versions this project expects.</p>
+          <p>Docker pins the lower-level system environment. <code>renv.lock</code> pins the R package layer. In this project, both matter.</p>
+          <p>If a package is missing, the reproducible fix is not "install it quickly inside Docker." The fix is to add it to <code>renv.lock</code> on the host, rebuild the image, and verify inside Docker. That way the package becomes part of the project recipe.</p>
+          <div class="lesson-example"><code>Rscript -e "install.packages('somepackage'); renv::snapshot()"</code><br><code>make docker-build</code></div>
+        `
+      },
+      "dockerfile": {
+        tag: "Docker file",
+        title: "Dockerfile",
+        html: `
+          <p>The <code>Dockerfile</code> is the recipe for the project environment. It says which base image to start from, which CRAN snapshot to use, how to restore R packages, and which reproducibility settings should be set.</p>
+          <p>The Docker image is the built result of that recipe. The container is one temporary run of the image.</p>
+          <p>In this repo, the Dockerfile pins <code>rocker/geospatial:4.5.3</code> by digest and sets geospatial/threading behavior. Edit it only when the environment itself really needs to change.</p>
+        `
+      },
+      "docker-build": {
+        tag: "Command",
+        title: "make docker-build",
+        html: `
+          <p><code>make docker-build</code> rebuilds the Docker image from the Dockerfile and <code>renv.lock</code>.</p>
+          <p>You need it after environment changes: Dockerfile edits, package changes in <code>renv.lock</code>, or anything that changes what gets baked into the image.</p>
+          <p>You usually do not need it after editing ordinary R scripts. During development, the repo folder is mounted into the container, so code edits are visible immediately to fresh <code>docker-run</code> commands.</p>
+        `
+      },
+      "container-layer": {
+        tag: "Docker concept",
+        title: "Container writable layer",
+        html: `
+          <p>When a Docker container runs, it gets a temporary writable layer. You can write files there while the container exists. When the container exits with <code>--rm</code>, that temporary layer is deleted.</p>
+          <p>The project folder is different: it is bind-mounted into the container, so outputs written under the project folder remain on your host machine.</p>
+          <p>This is why installing packages inside a running container is wrong here. The installation goes into the temporary layer, disappears later, and never gets recorded in <code>renv.lock</code>.</p>
+        `
+      },
+      "make-all": {
+        tag: "Command",
+        title: "make all",
+        html: `
+          <p><code>make all</code> is supposed to mean "run the stable top-level pipeline." Long-run, that should rebuild the paper outputs.</p>
+          <p>Right now, because the repo is mid-migration, <code>make all</code> only means the current stable pipeline surface: VTN 0-5.</p>
+          <p>So if <code>make all</code> passes, that is good news, but it does not yet mean the whole paper is reproducible.</p>
+        `
+      },
+      "spatial-data": {
+        tag: "Data concept",
+        title: "Spatial data",
+        html: `
+          <p>Spatial data are data with geography attached. A point might be a fine location. A polygon might be a parcel or conservation unit. A raster pixel might be a MapBiomas land-cover cell.</p>
+          <p>The project repeatedly asks spatial questions: which parcel overlaps which public land? How much of this parcel was forest in 1986? Which price region contains this property claim?</p>
+          <p>Spatial layers must be in compatible coordinate reference systems before you compare them. In <code>sf</code>, you check with <code>st_crs()</code> and reproject with <code>st_transform()</code>. In <code>terra</code>, you often see <code>crs()</code> and <code>project()</code>.</p>
+        `
+      },
+      "shapefile": {
+        tag: "Spatial data",
+        title: "Shapefile",
+        html: `
+          <p>A shapefile is a vector spatial dataset. It usually represents points, lines, or polygons. In this project, many boundaries are shapefiles: CAR parcels, municipalities, biome borders, protected areas.</p>
+          <p>One annoying thing: a shapefile is not just one file. The <code>.shp</code> stores geometry, but companion files like <code>.dbf</code>, <code>.shx</code>, and <code>.prj</code> carry attributes, indexing, and CRS information.</p>
+          <p>In R, <code>sf::st_read()</code> reads shapefiles. Keep the whole shapefile bundle together.</p>
+        `
+      },
+      "raster": {
+        tag: "Spatial data",
+        title: "Raster",
+        html: `
+          <p>A raster is a grid. Each cell or pixel has a value. MapBiomas is conceptually raster data: each 30-by-30 meter pixel gets a land-cover class in each year.</p>
+          <p>Raster work is often memory-heavy because there can be billions of pixels. That is why good raster code tends to think about chunking, file-backed operations, and exact output formats.</p>
+          <p>The MapBiomas migration should turn raw land-cover pixels into derived transition rasters, then later connect those transitions to parcel boundaries.</p>
+        `
+      },
+      "sf": {
+        tag: "R library",
+        title: "sf",
+        html: `
+          <p><code>sf</code> is the main R library for vector spatial data. It lets R treat a table as a table with geometry attached.</p>
+          <p>Common functions you will see: <code>st_read()</code> to read spatial files, <code>st_write()</code> to write them, <code>st_transform()</code> to reproject, <code>st_make_valid()</code> to repair geometries, and <code>st_intersection()</code> or <code>st_join()</code> to overlay layers.</p>
+          <p>The reason this project uses Docker is partly that <code>sf</code> depends on lower-level geospatial libraries. Different versions can produce subtly different spatial results.</p>
+        `
+      },
+      "here": {
+        tag: "Repo habit",
+        title: "here() and project-relative paths",
+        html: `
+          <p>Legacy scripts often contain paths like <code>/Users/pedro/Dropbox/...</code>. Those paths only work on one person's computer.</p>
+          <p><code>here::here()</code> builds paths from the project root, so a script can say <code>here("data", "input", "sicar")</code> and work on anyone's machine as long as they are in the repo.</p>
+          <p>During migration, replacing personal absolute paths with project-relative paths is one of the safest and most important changes.</p>
+        `
+      },
+      "tidyverse": {
+        tag: "R libraries",
+        title: "dplyr, tidyr, purrr",
+        html: `
+          <p>These are common R data-wrangling tools. They are not doing economics by themselves; they are reshaping tables so the analysis can happen.</p>
+          <ul>
+            <li><code>dplyr</code>: filter rows, create columns, group, summarize, join.</li>
+            <li><code>tidyr</code>: reshape data between wide and long formats.</li>
+            <li><code>purrr</code>: repeat the same operation over many files or values.</li>
+          </ul>
+          <p>Read tidyverse pipelines left to right: data enters, each verb changes it, final data exits.</p>
+        `
+      },
+      "io": {
+        tag: "Coding habit",
+        title: "Input and output",
+        html: `
+          <p>I/O just means reading files and writing files. It sounds boring, but it is the backbone of reproducibility.</p>
+          <p>A migrated script should make its inputs and outputs obvious. If you cannot tell what file a script depends on or what file it creates, it is hard to place that script in the DAG.</p>
+          <p>Good migration habit: put input paths and output paths near the top, then write exactly the expected output near the end.</p>
+        `
+      },
+      "text-cleaning": {
+        tag: "R libraries",
+        title: "Text cleaning",
+        html: `
+          <p>Text cleaning makes names match. Brazilian municipality names can differ by accents, capitalization, spacing, abbreviations, or encoding.</p>
+          <p>Packages like <code>stringr</code> and <code>stringi</code> help normalize names before joins. You may see code that removes accents, converts to uppercase, or squishes repeated spaces.</p>
+          <p>Be careful: a text fix can change which municipality a row matches. Manual corrections should be documented, not hidden inside a clever-looking transformation.</p>
+        `
+      },
+      "small-scripts": {
+        tag: "Best practice",
+        title: "Small scripts, explicit outputs",
+        html: `
+          <p>A good build script has one job. It reads known inputs, performs one stage of the pipeline, and writes known outputs.</p>
+          <p>This makes errors easier to locate. If a huge script does ten things and fails near the end, it is hard to know what state the earlier outputs are in. If a small stage fails, the failed boundary is clearer.</p>
+          <p>This is why migration is not just moving files. It is splitting monoliths into stages that can be named, run, checked, and connected.</p>
+        `
+      },
+      "moral-hazard": {
+        tag: "Economics concept",
+        title: "Moral hazard",
+        html: `
+          <p>Moral hazard is a change in behavior caused by the expectation that bad consequences will be softened or forgiven.</p>
+          <p>In this paper, the worry is that land-grabbers who did not qualify in 2009 might infer that future amnesties are likely. If so, amnesty could encourage more occupation or deforestation even outside the directly eligible group.</p>
+          <p>That is why eligible, ineligible, and never-eligible parcels cannot be casually mixed together.</p>
+        `
+      },
+      "eligibility-rule": {
+        tag: "Paper concept",
+        title: "Eligibility rule",
+        html: `
+          <p>The 2009 amnesty did not apply to everyone. The rough rule was: the parcel had to be in target federal undesignated land, occupied by 2004, and not larger than 1,500 hectares.</p>
+          <p>The repo has to construct those ingredients from data. Location comes from spatial overlays. Occupation timing comes from MapBiomas deforestation histories. Size comes from parcel geometry and occupation measures.</p>
+          <p>When you read code, ask which part of the eligibility rule each variable is trying to measure.</p>
+        `
+      },
+      "car": {
+        tag: "Data source",
+        title: "CAR / SICAR",
+        html: `
+          <p>CAR is Brazil's Rural Environmental Registry. SICAR is the system behind it. The key thing for this paper is that CAR contains self-reported rural property boundaries.</p>
+          <p>A CAR is not the same thing as a legal title. It is a claim or registration, and many claims overlap. That messiness is scientifically important because the paper studies land grabbing and informal ownership claims.</p>
+          <p>So CAR is the starting geography, not a clean truth. It needs cleaning, validation, overlap handling, and links to title and satellite data.</p>
+        `
+      },
+      "mapbiomas": {
+        tag: "Data source",
+        title: "MapBiomas",
+        html: `
+          <p>MapBiomas uses satellite imagery to classify land cover over time. Each pixel gets a class such as forest, pasture, agriculture, water, or other land uses.</p>
+          <p>The paper uses MapBiomas to build a history of each parcel: what was legacy forest, when forest first became human-use land, and how deforestation changed after policy.</p>
+          <p>The migration note says the core <code>transitions_combined</code> logic is in <code>legacy_repo/code/1_mapbiomas.R</code>. The task is to extract that producer chain into smaller scripts.</p>
+        `
+      },
+      "land-prices": {
+        tag: "Paper concept",
+        title: "Land prices",
+        html: `
+          <p>Land prices help answer a market-beliefs question: did people value ineligible land as if it might become legal later?</p>
+          <p>If regions with more eligible land get price increases after 2009, that can reflect direct legalization value. If regions with more ineligible land also get price increases, that can reflect the option value of future amnesty.</p>
+          <p>Price data are not always parcel-level, so the pipeline has to aggregate parcel types to the regions used in the price data.</p>
+        `
+      },
+      "treatment-control": {
+        tag: "Econometrics concept",
+        title: "Treatment and control groups",
+        html: `
+          <p>A treatment group is the group exposed to the policy or mechanism you want to study. A control group is the comparison group used to ask what would have happened otherwise.</p>
+          <p>Here there is not just one treatment. Eligible parcels can receive the direct amnesty effect. Ineligible parcels may receive an expectations effect. Never-eligible parcels are used as a comparison group because they should not reasonably expect legalization.</p>
+          <p>That is why classification code is not clerical. If group labels are wrong, the empirical design is wrong.</p>
+        `
+      },
+      "did": {
+        tag: "Econometrics concept",
+        title: "Difference-in-differences",
+        html: `
+          <p>Difference-in-differences compares changes over time. Very loosely: did the treated group change more after the policy than the comparison group changed after the policy?</p>
+          <p>In this paper, the policy shock is the 2009 amnesty. The comparison is not trivial because ineligible land-grabbers may also react if the policy changes expectations.</p>
+          <p>You do not need to master the econometrics to migrate code safely. But you do need to preserve the group definitions, time windows, and outcomes exactly unless Leo explicitly asks for a substantive change.</p>
+        `
+      },
+      "spatial-overlap": {
+        tag: "Spatial data",
+        title: "Spatial overlap",
+        html: `
+          <p>Spatial overlap means two polygons cover some of the same land. CAR claims overlap a lot, and protected-area or target-area layers can overlap parcels too.</p>
+          <p>Overlap is not just a technical annoyance. If you double-count overlapping parcels, you can overstate land area and deforestation. If you assign a parcel to the wrong area, you can change treatment status.</p>
+          <p>Expect code with <code>st_intersection()</code>, <code>st_union()</code>, area calculations, and thresholds like "more than 1 percent overlap."</p>
+        `
+      },
+      "spatial-join": {
+        tag: "Spatial data",
+        title: "Spatial join",
+        html: `
+          <p>A normal join matches rows by an ID. A spatial join matches rows by geography.</p>
+          <p>Example: a CAR parcel may not have an IHS price-region ID. But if its polygon intersects an IHS region polygon, the code can attach that region.</p>
+          <p>Spatial joins can duplicate rows when one feature intersects multiple features. Always look at row counts and area rules after a spatial join.</p>
+        `
+      },
+      "vtn-vnp": {
+        tag: "Data source",
+        title: "VTN / VNP / FNP",
+        html: `
+          <p>These are land value and land price sources. The acronyms are less important on day one than the role: they help connect parcel-type composition to land market outcomes.</p>
+          <p>The currently stable migrated chain is VTN 0-5. VNP/FNP-related work is still less integrated into the new DAG.</p>
+          <p>Be careful with geography. Price data may be municipal, regional, or tied to custom areas, so matching to parcel classifications is a real pipeline step.</p>
+        `
+      },
+      "reproducible-output": {
+        tag: "Best practice",
+        title: "Regenerable outputs",
+        html: `
+          <p>An output is reproducible when it can be regenerated from documented inputs by running code in the documented environment.</p>
+          <p>A beautiful figure in <code>output/</code> is not enough. The repo should know which script made it and what inputs that script used.</p>
+          <p>When you see an output, practice tracing it backward: final file, producing script, intermediate files, raw or manual inputs.</p>
+        `
+      },
+      "legacy-migration": {
+        tag: "Migration habit",
+        title: "Migrating legacy code",
+        html: `
+          <p>Migration is not a cosmetic cleanup. It is turning old research code into an explicit, runnable pipeline while preserving the substantive logic.</p>
+          <p>The safe pattern is: identify one coherent block, replace personal paths with project-relative paths, declare inputs and outputs, write outputs to the right folder, add a DAG target, then validate against expected behavior.</p>
+          <p>Do not refactor everything at once. Big rewrites make it impossible to tell whether a changed result came from a deliberate improvement or an accidental logic change.</p>
+        `
+      },
+      "monolith": {
+        tag: "Code shape",
+        title: "Monolithic script",
+        html: `
+          <p>A monolithic script is a large script that does many different things in one long file: cleaning, exploratory work, plotting, analysis, and ad hoc fixes.</p>
+          <p>Monoliths are common in research projects because people build them while discovering the analysis. They are not a moral failure. They are just hard to rerun and hard to reason about later.</p>
+          <p>The migration job is to split monoliths like <code>1_mapbiomas.R</code> into small stages without changing the scientific logic.</p>
+        `
+      },
+      "s2": {
+        tag: "Spatial setting",
+        title: "sf s2 engine",
+        html: `
+          <p><code>s2</code> is a geometry engine that lets <code>sf</code> handle some calculations on the sphere rather than pretending Earth is flat.</p>
+          <p>The project pins <code>sf_use_s2(TRUE)</code> because changing geometry engines can change spatial intersections and areas.</p>
+          <p>If a spatial operation fails, do not casually switch s2 off just to make the error disappear. That can change results.</p>
+        `
+      },
+      "manual-inputs": {
+        tag: "Data practice",
+        title: "Manual correction sheets",
+        html: `
+          <p>Manual inputs are curated files created by humans to fix known data issues. They are allowed when they are explicit and documented.</p>
+          <p>The VTN chain uses manual CSVs to map unmatched municipality names to municipality codes and handle known oddities like the 2015 EXTERIOR row.</p>
+          <p>Manual does not mean sloppy. It means the hand decision is visible, stable, and reviewable.</p>
+        `
+      },
+      "invariant": {
+        tag: "Testing idea",
+        title: "Invariant",
+        html: `
+          <p>An invariant is a condition that should be true after a step finishes.</p>
+          <p>For the VTN 2015 correction, a robust invariant would be: after the correction, no row remains with <code>state == "EX"</code> and <code>mun_name == "EXTERIOR"</code>.</p>
+          <p>The current script instead checks that the row count changed by exactly -1. That works on the first run but can fail on a rerun after the row is already gone. This is the status-specific idempotency issue documented in <code>PROBLEMS.md</code>.</p>
+        `
+      },
+      "magic-file": {
+        tag: "Migration problem",
+        title: "Magic file",
+        html: `
+          <p>A magic file is a file that code needs, but the repo cannot explain. No producer script, no source documentation, just "this file must already exist."</p>
+          <p>Magic files are dangerous because they make a project look runnable while secretly depending on someone's old machine state.</p>
+          <p>The big one here is <code>CleanCARShapes_robust/*.shp</code>. Until its provenance is recovered or formally accepted as a source snapshot, CAR-dependent work remains blocked.</p>
+        `
+      },
+      "clean-car": {
+        tag: "Current blocker",
+        title: "CleanCARShapes_robust",
+        html: `
+          <p>Legacy code says CAR layers were built from a set of cleaned per-state CAR shapefiles called <code>CleanCARShapes_robust</code>. The cleaning code for those shapefiles is not in the repo.</p>
+          <p>That blocks the CAR module because downstream code needs a cleaned Amazon-biome CAR layer. Without knowing how that layer was made, the new repo cannot honestly regenerate it from raw SICAR data.</p>
+          <p>The action item is to ask Pedro/Thiago for the workflow: scripts, folders, execution order, geometry validation, overlap rules, deduplication, filters, and manual edits.</p>
+        `
+      },
+      "mapbiomas-migration": {
+        tag: "Next task",
+        title: "Starting MapBiomas migration",
+        html: `
+          <p>The checkpoint says MapBiomas can move while the CAR blocker is unresolved because the core <code>transitions_combined</code> producer logic exists in <code>legacy_repo/code/1_mapbiomas.R</code>.</p>
+          <p>Start with the raw-only backbone: MapBiomas TIFF plus Amazon biome border, then grids, legacy forest, transitions, and <code>transitions_combined</code>.</p>
+          <p>Do not begin with the late exploratory plots or CAR-dependent sections. First make the core raster producer chain explicit and runnable.</p>
+        `
+      },
+      "hidden-state": {
+        tag: "Migration problem",
+        title: "Hidden bootstrap state",
+        html: `
+          <p>Hidden state means code works only because some precomputed file already exists somewhere: Dropbox, an external drive, a home directory, or an old <code>output/</code> folder.</p>
+          <p>A clean reproducible repo cannot rely on hidden state. It must either produce that file or document it as an accepted source input.</p>
+          <p>This is the difference between "it runs on Leo's machine" and "a future researcher can regenerate it."</p>
+        `
+      }
+    });
+
+    const learningShell = document.getElementById("learningShell");
+    const lessonTag = document.getElementById("lessonTag");
+    const lessonTitle = document.getElementById("lessonTitle");
+    const lessonBody = document.getElementById("lessonBody");
+    let lastLearningButton = null;
+
+    function renderLessonBlock(title, text) {
+      return `
+        <section class="lesson-block">
+          <h3>${title}</h3>
+          <p>${text}</p>
+        </section>
+      `;
+    }
+
+    function openLesson(key, sourceButton) {
+      const lesson = lessons[key] || {
+        tag: "Learning balloon",
+        title: "Still being documented",
+        html: `
+          <p>This term is marked for explanation, but the mini-lesson has not been written yet.</p>
+          <p>That means the page needs another pass. Confusing words are usually hiding project assumptions, so they are worth explaining.</p>
+        `
+      };
+      lastLearningButton = sourceButton;
+      lessonTag.textContent = lesson.tag;
+      lessonTitle.textContent = lesson.title;
+      lessonBody.innerHTML = lesson.html || [
+        renderLessonBlock("Explanation", lesson.quick || ""),
+        renderLessonBlock("Project connection", lesson.why || ""),
+        renderLessonBlock("Practical note", lesson.do || lesson.trap || "")
+      ].join("");
+      learningShell.hidden = false;
+      document.body.style.overflow = "hidden";
+      document.querySelector(".learning-close").focus();
+    }
+
+    function closeLesson() {
+      learningShell.hidden = true;
+      document.body.style.overflow = "";
+      if (lastLearningButton) {
+        lastLearningButton.focus();
+      }
+    }
+
+    document.querySelectorAll("[data-learn]").forEach((button) => {
+      button.addEventListener("click", () => openLesson(button.dataset.learn, button));
+    });
+
+    document.querySelectorAll("[data-close-learning]").forEach((button) => {
+      button.addEventListener("click", closeLesson);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !learningShell.hidden) {
+        closeLesson();
+      }
+    });
+  </script>
+</body>
+</html>

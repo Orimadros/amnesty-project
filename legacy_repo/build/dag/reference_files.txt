@@ -1,0 +1,86 @@
+Makefile
+QUESTIONS_LEGACY.md
+build/dag/active_files.txt
+build/dag/all_files.txt
+build/dag/classified_files.txt
+build/dag/classified_files_raw.txt
+build/dag/dangling_files.txt
+build/dag/deprecated_files.txt
+build/dag/external_path_scripts.txt
+build/dag/reference_files.txt
+docs/RegistroRural/RegistroRuralAPIKey.txt
+docs/RegistroRural/Termos de Uso - API Registro Rural.docx
+docs/apiSNCR.pdf
+docs/data_creation/creating_SicarMuniOverlap_variables/creating_SicarMuniOverlap_variables.aux
+docs/data_creation/creating_SicarMuniOverlap_variables/creating_SicarMuniOverlap_variables.log
+docs/data_creation/creating_SicarMuniOverlap_variables/creating_SicarMuniOverlap_variables.out
+docs/data_creation/creating_SicarMuniOverlap_variables/creating_SicarMuniOverlap_variables.pdf
+docs/data_creation/creating_SicarMuniOverlap_variables/creating_SicarMuniOverlap_variables.synctex.gz
+docs/data_creation/creating_SicarMuniOverlap_variables/creating_SicarMuniOverlap_variables.tex
+docs/data_creation/creating_SicarMuniOverlap_variables/creating_SicarMuniOverlap_variables.toc
+docs/foiaRequest.pdf
+docs/invoices/Registro Rural Invoice 301 - Columbia University.pdf
+docs/landValueBrazil.pdf
+docs/programa/Atas_de_reuniao_da__CTD.pdf
+docs/programa/RESPOSTA E-SIC 02680.000181-2017-44_SERFAL.doc
+docs/programa/Regimento_Interno_da_Camara_Tecnica_de_Destinacao_e_Regularizacao_Fundiaria_de_Terras_Publicas_Federais_Rurais.pdf
+docs/programa/Relatorio-Área-Cadastrada-Imoveis.csv
+docs/programa/SEI_INCRA - 13147384 - Portaria.pdf
+docs/programa/SEI_INCRA - 14388606 - Relatório.pdf
+docs/programa/SEI_INCRA - 14910117 - Relatório.pdf
+docs/programa/SEI_INCRA - 16503466 - Relatório.pdf
+docs/programa/SEI_INCRA - 7816950 - Nota Informativa 6212.pdf
+docs/programa/SEI_MAPA - 24506813 - Despacho.pdf
+docs/programa/SEI_MAPA - 24609579 - Despacho.pdf
+docs/programa/SEI_MAPA - 24688471 - Nota Técnica.pdf
+docs/programa/SEI_MAPA - 24732200 - Despacho.pdf
+docs/programa/SEI_MAPA - 24794441 - Nota Técnica.pdf
+docs/programa/glebas_TLP.pdf
+docs/programa/resposta_54800.000361-2016-35.ods
+docs/projectDescription.pdf
+docs/resources.docx
+lit/amazon/10FatosRegularizacaoFundiaria.pdf
+lit/amazon/2023_Pereira_Pucci_TaleGoldBlood.pdf
+lit/amazon/20934_20110927_134221-2.pdf
+lit/amazon/ARQUIVO_PORTAL_CMA_7361ComissaoPermanenteCMA20221031.pdf
+lit/amazon/Apoio à Política de Regularização Fundiária na Amazônia, nos Estados do Amazonas, Pará, Mato Grosso e Amapá.pdf
+lit/amazon/Carbon prices and forest preservation over space and time in the Brazilian Amazon.pdf
+lit/amazon/Cattle ranchers and deforestation in the Brazilian Amazon: Production, location, and policies.pdf
+lit/amazon/DETER-ing Deforestation in the Amazon: Environmental Monitoring and Law Enforcement.pdf
+lit/amazon/Da lei de terras ao Programa Terra Legal: um estudo do direito de propriedade e dos seus impactos na Amazônia.pdf
+lit/amazon/Destinação de Florestas Públicas Um meio de combate à grilagem e ao desmatamento ilegal na Amazônia.pdf
+lit/amazon/Edital_3976e1a1e8b0d49a43bd819b120649e63e6d6637.pdf
+lit/amazon/Environmental policies that shape productivity Evidence from cattle ranching in the Amazon.pdf
+lit/amazon/Estimating the Spatial Amplification of Damage Caused by Degradation in the Amazon.pdf
+lit/amazon/Forest conservation effects of Brazil's zero deforestation cattle agreements undermined by leakage.pdf
+lit/amazon/Forest law enforcement in the Brazilian Amazon: Costs and income effects.pdf
+lit/amazon/Lawless land in no man’s land The undesignated public forests in the T Brazilian Amazon.pdf
+lit/amazon/Manzolli_Rajao_21_Ilegalidade cadeia do Ouro.pdf
+lit/amazon/National Borders and the Conservation of Nature.pdf
+lit/amazon/Nota técnica sobre Medida Provisória n 910.pdf
+lit/amazon/O Sistema Nacional de Cadastro Rural história, limitações atuais e perspectivas para a conservação ambiental e segurança fundiária.pdf
+lit/amazon/OPTIMAL ENVIRONMENTAL TARGETING IN THE AMAZON RAINFOREST.pdf
+lit/amazon/Pereira_Pucci_Oct2022_ATaleOfGoldBlood_WP_Insper.pdf
+lit/amazon/Persistence of cattle ranching in the Brazilian Amazon A spatial analysis of the rationale for beef production.pdf
+lit/amazon/Programa Terra Legal – quem são os beneficiários da regularização fundiária na Amazônia Legal?.pdf
+lit/amazon/REGULARIZAÇÃO FUNDIÁRIA RURAL NA AMAZÔNIA LEGAL E A INTENSIFICAÇÃO DA GRILAGEM DE TERRAS análise das alterações na Lei Federal 11.952 2009 e das propostas dos Projetos de Lei 2.633 2020 e 510:2021.pdf
+lit/amazon/Stimulus for land grabbing and deforestation in the Brazilian Amazon.pdf
+lit/amazon/THE EFFECT OF RURAL CREDIT ON DEFORESTATION EVIDENCE FROM THE BRAZILIAN AMAZON.pdf
+lit/amazon/The rotten apples of Brazil’s agribusiness.pdf
+lit/amazon/The rotten apples of Brazil’s agribusiness_appendix (Thiago Alckmin's conflicted copy 2023-10-21).pdf
+lit/amazon/The rotten apples of Brazil’s agribusiness_appendix.pdf
+lit/amazon/WP005-A-Tale-of-Gold-and-Blood.pdf
+lit/amazon/Who is responsible for deforestation in the Amazon.pdf
+lit/amazon/Will farmers seek environmental regularization in the Amazon and how - Insights from the Rural Environmental Registry (CAR) questionnaires.pdf
+lit/amazon/carta-de-servicos-instituto-nacional-de-colonizacao-e-reforma-agraria-2023-12-18-04-51-38-252431.pdf
+lit/amazon/create_SicarMuniOverlap_variables_COMMENTS.R
+lit/amazon/muni_1303536_indigenous_example1.pdf
+lit/amazon/pdf-2.pdf
+lit/amazon/resources.docx
+lit/conceptual/Blundell-EscalationScrutiny-2020.pdf
+lit/conceptual/Moral Hazard versus Liquidity in Household Bankruptcy.pdf
+lit/conceptual/Rose_Shemtov_2021_Manuscript.pdf
+lit/conceptual/Understanding Disparities in Punishment: Regulator Preferences and Expertise.pdf
+lit/conceptual/jmp-2.pdf
+lit/conceptual/rdz050.pdf
+lit/conceptual/retrieve.pdf
