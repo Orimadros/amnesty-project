@@ -66,6 +66,12 @@ has_all_years <- function(base) all(file.exists(
 ))
 bases <- Filter(has_all_years, bases)
 
+# Optional single-tile mode: process just one tile per process. Running one
+# tile per R process lets the OS fully reclaim the heavy per-tile memory
+# between tiles (more robust than gc() alone on memory-limited hosts).
+only_base <- Sys.getenv("MB_ONLY_BASE", unset = "")
+if (nzchar(only_base)) bases <- intersect(bases, only_base)
+
 log_msg("legacy_dir   = ", legacy_dir)
 log_msg("cover_dir    = ", cover_dir)
 log_msg("combined_dir = ", combined_dir)
