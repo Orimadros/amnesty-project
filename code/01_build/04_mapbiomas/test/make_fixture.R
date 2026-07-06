@@ -16,8 +16,9 @@ window  <- terra::ext(-63, -61, -6, -4)
 out_dir <- here("data", "input", "_test", "mapbiomas")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-# 1985 & 1986 so downstream steps (legacy-forest baseline) can be tested too.
-for (year in c(1985, 1986)) {
+# 1985-1988: enough to test the legacy baseline (85-86), cover classification,
+# and a short transition series downstream.
+for (year in c(1985, 1986, 1987, 1988)) {
   src <- here("data", "input", "mapbiomas", paste0("brasil_coverage_", year, ".tif"))
   if (!file.exists(src)) stop("Source raster not found: ", src)
   out <- file.path(out_dir, paste0("brasil_coverage_", year, ".tif"))
