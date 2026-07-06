@@ -41,6 +41,7 @@ MB_GRIDS_STAMP := $(STAMP_DIR)/mapbiomas_grids.stamp
 MB_LEGACY_STAMP := $(STAMP_DIR)/mapbiomas_legacy.stamp
 MB_COVER_STAMP := $(STAMP_DIR)/mapbiomas_cover.stamp
 MB_TRANSITIONS_STAMP := $(STAMP_DIR)/mapbiomas_transitions.stamp
+MB_STATS_STAMP := $(STAMP_DIR)/mapbiomas_stats.stamp
 
 .PHONY: help all \
 	build analysis \
@@ -94,7 +95,7 @@ lavoura:
 
 # Full-scale run of the MapBiomas backbone (all years/tiles). Long-running.
 # Scope can be narrowed for a smoke test via the MB_* env vars the scripts read.
-mapbiomas: $(MB_TRANSITIONS_STAMP)
+mapbiomas: $(MB_STATS_STAMP)
 
 full: 01_build 02_analysis
 
@@ -168,4 +169,9 @@ $(MB_COVER_STAMP): $(MB_DIR)/2_classify_cover.R $(MB_GRIDS_STAMP) | $(STAMP_DIR)
 # Step 3: transitions (needs both the legacy baseline and the per-year cover).
 $(MB_TRANSITIONS_STAMP): $(MB_DIR)/3_compute_transitions.R $(MB_LEGACY_STAMP) $(MB_COVER_STAMP) | $(STAMP_DIR)
 	$(R_SCRIPT) "$(MB_DIR)/3_compute_transitions.R"
+	@date > "$@"
+
+# Step 4: biome-level deforestation stats (needs the transition rasters).
+$(MB_STATS_STAMP): $(MB_DIR)/4_deforestation_stats.R $(MB_TRANSITIONS_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(MB_DIR)/4_deforestation_stats.R"
 	@date > "$@"
