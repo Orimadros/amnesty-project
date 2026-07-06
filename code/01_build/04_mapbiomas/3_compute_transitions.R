@@ -116,6 +116,10 @@ for (base in bases) {
   n_done <- n_done + 1L
   log_msg("  tile ", base, ": ", nrow(dt), " px, ", length(years), " year rasters (",
           round(as.numeric(Sys.time() - t0, units = "secs"), 1), "s)")
+
+  # Release this tile's large objects before the next tile (the per-tile stack
+  # is memory-heavy; without this, tiles accumulate and OOM). Matches legacy gc.
+  rm(dt, tm, n_change, xs, ys); gc(verbose = FALSE)
 }
 
 log_msg("DONE. tiles=", n_done, " skipped(existing)=", n_skipped)
