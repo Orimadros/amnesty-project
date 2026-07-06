@@ -11,18 +11,17 @@
 
 suppressMessages({ library(here); library(terra) })
 
-src <- here("data", "input", "mapbiomas", "brasil_coverage_1985.tif")
-if (!file.exists(src)) stop("Source raster not found: ", src)
-
 # Small window inside the Amazon biome (lon -63..-61, lat -6..-4) -> ~4 tiles.
-window <- terra::ext(-63, -61, -6, -4)
-
+window  <- terra::ext(-63, -61, -6, -4)
 out_dir <- here("data", "input", "_test", "mapbiomas")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-out <- file.path(out_dir, "brasil_coverage_1985.tif")
 
-r <- terra::rast(src)
-r <- terra::crop(r, window)
-terra::writeRaster(r, out, filetype = "GTiff", overwrite = TRUE)
-
-cat(sprintf("fixture written: %s  (%d x %d cells)\n", out, nrow(r), ncol(r)))
+# 1985 & 1986 so downstream steps (legacy-forest baseline) can be tested too.
+for (year in c(1985, 1986)) {
+  src <- here("data", "input", "mapbiomas", paste0("brasil_coverage_", year, ".tif"))
+  if (!file.exists(src)) stop("Source raster not found: ", src)
+  out <- file.path(out_dir, paste0("brasil_coverage_", year, ".tif"))
+  r <- terra::crop(terra::rast(src), window)
+  terra::writeRaster(r, out, filetype = "GTiff", overwrite = TRUE)
+  cat(sprintf("fixture written: %s  (%d x %d cells)\n", out, nrow(r), ncol(r)))
+}
