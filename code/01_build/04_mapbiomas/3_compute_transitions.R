@@ -38,7 +38,14 @@ suppressMessages({
   library(Rcpp)
 })
 
-sourceCpp(here("code", "01_build", "04_mapbiomas", "aux", "deforestation_rules.cpp"))
+# Compile the kernel into a stable, shared cache so parallel workers reuse one
+# build instead of each recompiling. Precompile once (single process) to warm
+# the cache before launching workers, avoiding concurrent first-compile races.
+cpp_cache <- Sys.getenv("MB_CPP_CACHE",
+  unset = here("data", "intermediate", "mapbiomas", ".cpp_cache"))
+dir.create(cpp_cache, recursive = TRUE, showWarnings = FALSE)
+sourceCpp(here("code", "01_build", "04_mapbiomas", "aux", "deforestation_rules.cpp"),
+          cacheDir = cpp_cache)
 
 parse_range <- function(s) {
   s <- trimws(s)
@@ -114,8 +121,14 @@ for (base in bases) {
            data.table::fifelse(lab == "deforested", 2L,
            data.table::fifelse(lab == "reforested", 3L, 0L)))
     r <- terra::rast(data.frame(x = xs, y = ys, value = val), type = "xyz", crs = "EPSG:4326")
+    # Lossless DEFLATE compression: the values are just 0/1/2/3, which compress
+    # ~50-100x. Without this the uncompressed GTiffs (713 tiles x ~34 years x
+    # ~14M px) run to hundreds of GB and overflow the disk. Pixel VALUES are
+    # unchanged -- this only affects on-disk encoding, not results.
     terra::writeRaster(r, file.path(combined_dir, sprintf("grid_%s_%s.tif", base, years[idx])),
-                       filetype = "GTiff", overwrite = TRUE)
+                       filetype = "GTiff", overwrite = TRUE,
+                       gdal = c("COMPRESS=DEFLATE", "PREDICTOR=2", "ZLEVEL=6"),
+                       datatype = "INT1U")
   }
 
   saveRDS(data.frame(x = dt$x, y = dt$y, n_pixel_change_back_to_back = n_change), marker)
