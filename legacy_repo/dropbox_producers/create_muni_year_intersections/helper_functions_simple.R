@@ -1,0 +1,3052 @@
+
+# packages used 
+# pacman::p_load(data.table, magrittr, dplyr, glue, stringr)
+
+################################################################################
+# Section 0: functions to use in the set up section  ###########################
+################################################################################
+
+save_global_env <- function(directory="/home/tresende/Global_Political_Connections/general_purpose/code/global_env/"){
+  
+  global_env_save <- get_timestamp() %>% 
+    substr(start = 1, stop = 11) %>% 
+    str_remove_all(., pattern = "-") %>% 
+    paste0("global_env",., ".RData") %>% 
+    paste0(directory, .)
+  
+  save.image(file=global_env_save)}
+
+################################################################################
+# VARIABLE MANIPULATIONS --------
+################################################################################
+
+# Compute number of breaks between the max and min of a variables ----
+create_breaks <- function(x) {
+  max_x <- max(x)
+  min_x <- min(x)
+  range_x <- max_x - min_x
+  upper_bound <- max_x + 0.1 * range_x
+  lower_bound <- min_x - 0.1 * range_x
+  breaks <- seq(floor(lower_bound), ceiling(upper_bound), length.out = 6)
+  return(breaks)
+}
+
+create_breaks_ranges <- function(x, units = 10) {
+
+  # x <-c(1, 2, 5, 20, 190, 404)*(-1)
+  
+  
+    max_x <- max(max(x), 0)
+    min_x <- min(min(x), 0)
+
+    diff <- max_x - min_x
+    
+    if(min_x==0){
+      max_x <- floor((max_x + diff/10)/units)*units
+    }
+    if(max_x==0){
+      min_x <- ceiling((min_x - diff/10)/units)*units
+    }
+    
+  range_x <- max_x - min_x
+  upper_bound <- max_x + 0.01 * range_x
+  lower_bound <- min_x - 0.01 * range_x
+  breaks <- seq(floor(lower_bound), ceiling(upper_bound), length.out = 6)
+  return(breaks)
+}
+
+# create breaks for ggplot (or any other reason ) ------
+gg_create_breaks <- function(min, max, breaks, type = "regular"){
+  
+  # min <- 0
+  # max <- 400
+  # breaks <- 12
+  
+  if(type=="regular"){
+    by <- ceiling((max-min)/breaks)
+    out <- ceiling(seq(min, max+by, by))
+  }
+  
+  if(type=="log-regular"){
+    
+    log_max <- log(max)
+    log_min <- ifelse(is.numeric(log(min)),
+                      ifelse(is.numeric(log(min + 0.001)), 0, log(min + 0.00001)) ,
+                      log(min))
+    
+    
+    by <- ceiling((log_max-log_min)/breaks)
+    
+    out <- ceiling(exp(seq(log_min, log_max+by, by))) 
+  }
+  
+  if(type=="log-log"){
+    
+    log_max <- log(max)
+    log_min <- ifelse(is.numeric(log(min)),
+                      ifelse(is.numeric(log(min + 0.001)), 0, log(min + 0.00001)) ,
+                      log(min))
+    
+    
+    by <- ceiling((log_max-log_min)/breaks)
+    
+    out <- seq(log_min, log_max+by, by)
+  }
+  
+  if(type=="10-regular"){
+    
+    max10 <- max*10
+    min10 <- min*10
+    
+    by <- ceiling((max10-min10)/breaks)
+    
+    out <- seq(min10, max10+by, by) / 10 
+  }
+  
+  out %>% 
+    return()
+  
+}
+
+# month to date -----
+month_name_to_number <- function(month_name) {
+  
+  #month_name <- xx
+  
+  month_number <- c("January" = 1,
+                    "February"= 2,
+                    "March"= 3,
+                    "April"= 4,
+                    "May"= 5,
+                    "June"= 6,
+                    "July"= 7,
+                    "August"= 8,
+                    "September"= 9,
+                    "October"= 10,
+                    "November"= 11,
+                    "December"= 12)
+  
+  names(month_number) <- names(month_number) %>% str_to_lower()
+  
+  month_number_dt <- month_number %>% 
+    as.data.table(keep.rownames = T) %>% 
+    rename_columns(current_names = c("rn", "."), c("month_lower", "number"))
+  
+  month_vector_dt <- month_name %>%
+    as.data.table(keep.rownames = F) %>% 
+    rename_columns(current_names = c("."), c("month")) %>% 
+    .[, month_lower :=     str_to_lower(month)] %>% 
+    generate_internal_order_column(. )
+  
+  month_vector_dt %>% 
+    merge(x = ., y= month_number_dt, by = "month_lower", all.x=T, all.y=F) %>% 
+    .[order(INTERNAL_ORDER_COLUMN)] %>% 
+    .[, number] %>% 
+    return()
+  
+}
+
+# clean date columns ------
+clean_date_cols <- function(year, month, day){
+  
+  # year <- tmp$heat_date_year
+  # month <- tmp$heat_date_month
+  # day <- tmp$heat_date_day
+  
+  data.table(year = year, month = as.character(month), day = as.character(day)) %>% 
+    .[(nchar(month)==1), month := paste0(0, month) ] %>% 
+    .[(nchar(day)==1), day := paste0(0, day) ] %>% 
+    .[, as.numeric(paste0(year, month, day))] %>% 
+    return()
+  
+}
+
+
+################################################################################
+# file. and dir. funcitons ----
+################################################################################
+
+copy_files <- function(src_dir, dest_dir) {
+  
+  # Get a list of all files in the source directory
+  files <- list.files(src_dir, full.names = TRUE
+                      , recursive = T
+                      )
+
+  # Iterate through each file and copy it to the destination directory
+  for (file in files) {
+    file.copy(file, dest_dir)
+  }
+  
+
+}
+
+
+standardize_folder_and_file_names <- function(parent_folder){
+  
+  #parent_folder <- "C:/Users/alckm/Dropbox/pdf_conversion/data/input/unzipped/20230118 - Copy/"
+  
+  paste0("Standardizing folder and file names for documents under: ", parent_folder) %>% 
+  message_with_lines()
+  
+  setwd(parent_folder)
+  
+  files <- list.files(path = parent_folder, include.dirs = T)
+  
+  new_names <- files %>% stri_trans_tolower() %>% 
+    stri_trans_general(., "Any-Latin") %>% 
+    stri_trans_general(., "Latin-ASCII")  %>% 
+    str_replace_all(., " ", "_") %>% 
+    str_replace_all(., "-", "_") 
+  
+  for(i in 1:length(files)){
+    
+    paste0("Renaming ", files[i] , " to ", new_names[i]) %>% 
+      message_with_lines()
+    
+    file.rename(from = files[i], to = new_names[i])
+    Sys.sleep(0.1)
+  }
+  
+}
+
+#parent_folder <- "C:/Users/alckm/Dropbox/pdf_conversion/data/input/unzipped/20230118_-_copy"
+
+standardize_folder_and_file_names_one_level_deeper <- function(parent_folder){
+  
+  standardize_folder_and_file_names(parent_folder)
+  
+  folders <- list.dirs(parent_folder, full.names = T)
+  
+  for(FOLDER in folders){
+    
+    paste0("Standardizing files in : ", FOLDER)
+    
+    standardize_folder_and_file_names(FOLDER)
+      
+
+  }
+  
+  
+}
+
+# cumulative max for vector ------
+cummax <- function(x) {
+  
+  
+  max_so_far <- x[1]
+  cummax_vec <- numeric(length(x))
+  for (i in 1:length(x)) {
+    max_so_far <- max(max_so_far, x[i])
+    cummax_vec[i] <- max_so_far
+  }
+  return(cummax_vec)
+}
+
+# second cumulative max for vector ------
+
+second_cummax <-  function(x){
+  
+  second_cummax_vec <- numeric(length(x))
+  
+  if(length(x)>1){
+    for (i in 2:length(x)) {
+      
+      vec_so_far <- x[1:i]
+      max_so_far <- max(vec_so_far)
+      index_for_max <- which(vec_so_far==max_so_far)[1]
+      vec_so_far[index_for_max] <- 0
+      
+      second_max <- max(vec_so_far)
+      
+      second_cummax_vec[i] <- second_max
+      
+    }
+  } 
+  
+  return(second_cummax_vec)
+  
+}
+
+# running sum of top two numbers ------
+cumsum_top2 <- function(x) {
+  # x <- c(1, 5, 1, 3, 6, 3, 1, 8, 9, 2)
+  
+  cx <- cummax(x)
+  cx2 <- second_cummax(x)
+  
+  running_total <- cx + cx2
+  return(running_total)
+}
+
+################################################################################
+# Section 1: mathematical helper functions #####################################
+################################################################################
+
+# Section 1.1: is greater than  ----
+is_greater_than <- function(x, n){return(x>n)}
+
+# Section 1.2: is greater than  or equal to ----
+is_greater_than_or_equal_to <- function(x, n){return(x>=n)}
+
+# is greater than zero
+is_greater_than_zero <- function(x){return(x>0)}
+
+# Section 1.3: is x greater than zero ----
+is_greater_than_zero <- function(x) {
+  out <- (x > 0) * 1
+  return(out)
+}
+
+# Section 1.4: missing as zero ----
+na_as_zero <- function(x){
+  if(is.na(x)){
+    return(0)
+  }else{return(x)}
+}
+# Section 1.5: create x 0s according to vector specification ----
+n_zeroes <- function(vec){
+  
+  out <- as.character(vec)
+  
+  for(i in 1:length(vec)){
+    
+    v <- vec[i]
+    
+    if((v==0)|is.na(v)){
+      
+      if(is.na(v)){
+        
+        out[i] <- ""
+        
+      }else{
+        
+        out[i] <- ""
+        
+      }
+      
+      
+      out[i] <- ""
+      
+    }else{
+      
+      out[i] <- v %>% rep("0", .) %>% glue::glue_collapse(x=.)
+      
+    }
+  }
+  
+  
+  out[is.na(vec)] <- NA
+  
+  
+  return(out)
+}
+
+
+
+
+# Section 1.6: format commas ----
+format_with_commas <- function(x) {
+  
+  if(is.numeric(x)){
+    if(does_numeric_have_decimal(x)){
+      message_with_lines("Rounding the numeric value for formatting purposes.")
+    }
+      
+  }
+  
+  # Convert the input to a character string
+  x <- as.character(as.integer(round(x, digits = 0)))
+  
+  # Use gsub to add a comma after every three digits, starting from the right
+  x <- gsub("(\\d)(?=(\\d{3})+$)", "\\1,", x, perl = TRUE)
+  
+  # Return the formatted string
+  return(x)
+}
+
+# multply things in line when piping  
+inline_sum <- function(a, b){
+  return(a+b)
+}
+inline_sub <- function(a, b){
+  return(a-b)
+}
+inline_mult <- function(a, b){
+  return(a*b)
+}
+inline_div <- function(num, denom){
+  return(num/denom)
+}
+
+#  does the numeric value have a decimal? -----
+does_numeric_have_decimal <- function(x) {
+  
+  if(is.numeric(x)) {
+
+    test  <- (x != round(x)) %>% .[!is.na(.)]
+    
+    if(any(test)) {
+      return(TRUE)
+    } else {
+      return(FALSE)
+    }
+  } else {
+    return(FALSE)
+  }
+}
+
+# function to standardize a vector into the std normal distribution  -----
+standard_normalize <- function(vector){
+  
+  vector_is_homogenous <- (length(vector)<=1)|(length(unique(vector))==1)
+  
+  if(vector_is_homogenous){
+    out <- c(0)
+  }else{
+    
+    out <- (vector-mean(vector, na.rm=T))/(sd(vector, na.rm=T))
+  }
+  
+  return(out)
+  
+}
+
+################################################################################
+# Section 2: column names ######################################################
+################################################################################
+
+# Section 2.1: get new names between old and new data.table ------
+get_new_column_names <- function(old_datatable,
+                                 new_datatable){
+  
+  # get original names
+  old_names <- names(old_datatable)
+  
+  # get dummy names from owners
+  new_additional_names <-
+    names(new_datatable) %>%
+    .[!(. %in% old_names)]
+  
+  return(new_additional_names)
+  
+}
+
+# Section 2.2: function to rename vector of variables from data.table ----
+rename_columns <- function(datatable, current_names, new_names){
+
+  # get all names
+  all_names <- names(datatable)
+  
+  # find variables to not change
+  do_not_change <- all_names %>% .[!(. %in% current_names)]
+  
+  # check if names that won't be changed intersect with new names 
+  if(sum(new_names %in% do_not_change)==1){
+    
+    # get the variables that already exist
+    variables_that_already_exist <-  new_names %>% .[. %in% do_not_change] %>% glue::glue_collapse(sep = ", ")
+    
+    warning_message <- paste0("At least one elelment of new_name vector already exists as a variable which will not be renamed.", 
+                              " The funciton will return the original data-table instead!!",
+                              " The variables in question are: ", 
+                              variables_that_already_exist)
+    
+    warning(warning_message)
+    
+    return(datatable)
+    
+  }else{
+    
+    # separate variables to change and not change
+    data_do_not_change <- datatable %>% copy() %>% .[, ..do_not_change]
+    data_change <- datatable %>% copy() %>% .[, ..current_names]
+    
+    # change variables we wish to rename
+    names(data_change) <- new_names
+    
+    # join data back together (tho perhaps in different order)
+    out <- cbind(data_do_not_change, data_change)
+    
+    return(out)
+    
+  }
+}
+
+# get vairable name that matches a suffix ----
+get_variable_name_with_suffix <- function(datatable, suffix){
+  
+  # delete later  
+  # datatable <- surname_fyi
+  # suffix <- local_origin_num
+  
+  # ---
+  
+  column_name <- names(datatable) %>% 
+    .[endsWith(x = ., suffix = as.character(suffix))] %>% 
+    c(.)
+  
+  return(column_name)
+}
+
+# cleans text ------------
+
+clean_text_revolvingdoor <- function(x){
+
+  x %>%
+    # clean up firm names by making upper case
+    enc2utf8() %>%
+    toupper() %>%
+    # removing punctuation
+    gsub(pattern = "[[:punct:]]", replacement = " ", x = .) %>%
+    # removing double spaces
+    gsub(pattern = "\\s+", replacement = " ", x = .) %>%
+    # removing leading/trailing spacess
+    stri_trim_both(.) %>%
+    return()
+
+}
+
+# clean numerical suffix to avoid matching confusion ----
+clean_numerical_suffix <- function(variables){ #clean_numerical_suffix
+  
+  # delete later
+  # variables <- c("fy_indicator_alo_education_max_2",
+  #                "fy_indicator_alo_education_max_20",
+  #                "fy_indicator_alo_education_max_NF",
+  #                "fy_indicator_alo_education_max_0", 
+  #                "fy_indicator_alo_education_max_", 
+  #                "fy_indicator_alo_education_max_987", 
+  #                "fy_indicator_alo_education_max_peter")
+  
+  
+  # copy original variables 
+  variables_original <- copy(variables)
+  
+  # get digit suffixes
+  digit_suffixes <- variables_original %>% get_digits_after_last_underscore(.)
+  # identify which ones are not digits
+  suffix_is_not_digit <- is.na(digit_suffixes)
+  
+  # get variable roots
+  roots <- remove_suffix_from_variables(
+    variables = variables,
+    suffixes = digit_suffixes)
+  
+  # number of digits in each suffix
+  digit_suffixes_nchar <- digit_suffixes %>% nchar()
+  # max number of digits in all suffixes
+  digit_suffixes_nchar_max <- 3 #digit_suffixes_nchar %>% max(., na.rm=T)
+  # difference between max and actual
+  diff <- (digit_suffixes_nchar_max - digit_suffixes_nchar)
+  
+  # get the number of zeros to add to suffix
+  zeros_to_add <- n_zeroes(diff)  
+  
+  # paste the appropriate amount of zeros to the digits 
+  new_suffix <- paste0(zeros_to_add, digit_suffixes) #%>% 
+  # if the suffix digit is missing/suffix is a string, then it appears as "NANA"; so drop it
+  #str_remove_all(., "NANA")
+  
+  # get the new full variable names 
+  renamed <- paste0(roots, new_suffix)
+  
+  # varables with no digit suffix are returned as the original names 
+  renamed[suffix_is_not_digit] <- variables_original[suffix_is_not_digit]
+  
+  out <- copy(renamed)
+  
+  return(out)
+  
+}
+
+
+# drop duplicates across whole dt ----------
+
+drop_duplicates <- function(dt, by=NULL){
+  
+  if(is.null(by)){
+    by <- dt %>% names()
+  }
+  
+  dt %>% 
+    .[, .GRP, by] %>% 
+    .[!duplicated(GRP)] %>% 
+    .[, GRP := NULL] %>% 
+    return()
+  
+}
+
+
+# order these first (USED TO BE order_these_first) -----
+reorder_columns <- function(vector, first){
+  
+  vector %>% 
+    append(first, .) %>% 
+    .[!duplicated(.)] %>% 
+    return()
+  
+} 
+
+# remove suffix from variables ----
+remove_suffix_from_variables <- function(variables, suffixes){
+  
+  variables_nchar <-  nchar(variables)
+  suffixes_nchar <-  nchar(suffixes) %>% lapply(., na_as_zero) %>% unlist
+  diff_nchar <- variables_nchar - suffixes_nchar
+  
+  roots <- variables
+  for(i in 1:length(variables)){
+    
+    roots[i] <- substring(variables[i], 1, last = diff_nchar[i])
+    
+  }
+  
+  return(roots)
+  
+}
+
+################################################################################
+# Section 3: String operations #################################################
+################################################################################
+
+
+
+# is.na for strings 
+is_empty_string <- function(x){
+  return(ifelse(x=="", TRUE, FALSE))
+}
+
+# Section 3.0: examples of names that need cleaning  -----
+str_create_name_column <- function(dataset="CIA-CHIEFS"){
+  
+  data_set_options <- c("CIA-CHIEFS")
+  
+  if(is.null(dataset)){
+    message("The names here are sourced from actual data-sets. Available data-set options are: ")
+    message(glue::glue_collapse(data_set_options, sep = ", "))
+  }
+
+  if(dataset=="CIA-CHIEFS"){
+    c(
+      "Prifti, Dritan",
+      "Baymyrat HOJAMUHAMMEDOW"
+      ,
+      "Francoise ASSOGBA",
+      "Sarbu, Marian"
+      ,
+      "Jennifer WESTFORD, Doctor",
+      "Hierro, Luis"
+      ,
+      "Ahmed Mohamed Mohamed AL-KAROURI",
+      "Raja Pervaiz ASHRAF"
+      ,
+      "Bedouma Alain YODA",
+      "Vasyl HRYTSAK"
+      ,
+      "Abdul Hadi ARGHANDIWAL",
+      "Toprak, Erdogan"
+      ,
+      "Jose Carlos Lopes CORREIA",
+      "Sheikh Hassan Ismail BILE"
+      ,
+      "MENG Jianzhu",
+      "Metogho, Emmanuel Ondo"
+      ,
+      "Ivan ZAMBRANO",
+      "Tatoul MARKARIAN"
+      ,
+      "Mariano Gago, Jose",
+      "Maumoon Abdul GAYOOM"
+      ,
+      "Sabine LARUELLE",
+      "Denis SASSOU-Nguesso"
+      ,
+      "Jeffrey, Henry, Doctor",
+      "Abdoulaye BALDE"
+      ,
+      "Sergey MASKEVICH",
+      "Masahiko KOMURA"
+      ,
+      "Tsedevdamba OYUNGEREL",
+      "Tokon MAMYTOV"
+      ,
+      "MOHAMMAD bin Abd Rahman",
+      "Evode UWIZEYIMANA"
+      ,
+      "Maria KIWANUKA",
+      "Selma Aliye KAVAF"
+      ,
+      "Djombo, Henri",
+      "Petre TSISKARISHVILI"
+      ,
+      "Gilles NOGHES",
+      "Adechi, Joel"
+      ,
+      "Clayton BURGIN",
+      "Mikhail KHVOSTOV"
+      ,
+      "Abdiweli Ibrahim Sheikh MUUDEEY",
+      "M. Veerappa MOILY"
+      ,
+      "Ngandagina, Joao Baptista",
+      "Babanyyaz ITALMAZOW"
+      ,
+      "Adil SAFIR",
+      "Andrea LEADSOM"
+      ,
+      "Tabare Ramon VAZQUEZ Rosas",
+      "Peri Vaevae PARE"
+      ,
+      "Milosavljevic, Slobodan",
+      "Besir ATALAY"
+      ,
+      "Naomi Mataafa FIAME",
+      "SUWIT Yotmanee"
+      ,
+      "Shuala, Abd al-Nabi al-",
+      "Reginald AUSTRIE"
+      ,
+      "Elyse RATSIRAKA",
+      "Janez PODOBNIK"
+      ,
+      "Henry PUNA",
+      "Khatib, Mohammed Seif"
+      ,
+      "Gudmundur Arni STEFANSSON",
+      "Obaid Humaid al-TAYER"
+      ,
+      "YOO Young-sook",
+      "Aananda Prasad POKHERAL"
+      ,
+      "Timothy TONG Hin-ming",
+      "Janis MAZEIKS"
+      ,
+      "Fernando \"\"Lasama\"\" de ARAUJO",
+      "Thomas Motsoahae THABANE"
+      ,
+      "Lee, Howard Chin",
+      "Christian NOYER"
+      ,
+      "Ramiro VALDES Menendez",
+      "Guillermo RISHCHYNSKI"
+      ,
+      "Abd al-Wahid al-AWADI",
+      "Qaranful, Sami"
+      ,
+      "Mahen JHUGROO",
+      "Ruslan KAZAKBAEV"
+      ,
+      "Daniel SCIOLI",
+      "Iuga, Mircea"
+      ,
+      "KYAW SAN, Colonel",
+      "Georgette KOKO"
+      ,
+      "Adoum GARGOUM",
+      "Adao do NASCIMENTO"
+      ,
+      "Deborah Mae LOVELL",
+      "Muhammad bin Abd al-Malik AL AL-SHAYKH"
+      ,
+      "Julio VELARDE",
+      "Yuli EDELSTEIN"
+      ,
+      "Anna BIJLEVELD",
+      "Banoita Tourab SALEH, Doctor"
+      ,
+      "Aiyaz SAYED-KHAIYUM",
+      "Asia Muhammad Ali IDRISS"
+      ,
+      "Paulo Sergio PASSOS",
+      "RYU Mi Yong"
+      ,
+      "Lohani, Prakash Chandra",
+      "ALI MUHSIN al-Ahmar, Lieutenant General"
+      ,
+      "Kamana, Jean",
+      "LETSIE III"
+      ,
+      "Petr PROKOPOVICH",
+      "Paul SWAIN"
+      ,
+      "HU Jintao",
+      "Bogdan KLICH"
+      ,
+      "Lygia KRAAG-KETELDIJK",
+      "Mahesh BASNET"
+      ,
+      "NUT NINDOEUN (F)",
+      "Karl-Heinz GRASSER"
+      ,
+      "Amadou Boubacar CISSE",
+      "Truong My HOA"
+      ,
+      "Siniora, Fuad",
+      "JUNEDIN Sado"
+      ,
+      "De Mauro, Tullio",
+      "Philippe RICHERT"
+      ,
+      "Sam IDURI",
+      "Kanda SIPTEY"
+      ,
+      "Eyegue Obama Asue, Francisco Pascual",
+      "El Fassi, Abbas"
+      ,
+      "OH Myung",
+      "Alfheidur INGADOTTIR"
+      ,
+      "Waena, Nathaniel",
+      "Delano Frank BART"
+      ,
+      "Geldymukhammed ASHIRMUKHAMEDOV",
+      "Jose Eduardo DOS SANTOS"
+      ,
+      "Ilham ALIYEV",
+      "Fillon, Francois"
+      ,
+      "Rasmussen, Lars Loekke",
+      "Steve BLACKETT"
+      ,
+      "Carlos Alberto AMARANTE BARET",
+      "AHMAD bin Jumat, Doctor"
+      ,
+      "Dewael, Patrick",
+      "Paride ANDREOLI"
+      ,
+      "Henry KAJURA",
+      "Phiwayinkhosi MABUZA"
+      ,
+      "SUN CHANTHOL",
+      "Homayoun RASA"
+      ,
+      "Nkaku KABI",
+      "Rajoy, Mariano Brey"
+      ,
+      "Danilo ASTORI Saragoza",
+      "Hassanein, Muhammad Medhat"
+      ,
+      "Qarase, Laisenia",
+      "Mendez Pinelo, Cesar Augusto, Brigadier General"
+      ,
+      "Qarase, Laisenia",
+      "PERNG Fai-nan"
+      ,
+      "Anerood JUGNAUTH, Sir",
+      "KHALID bin Abdallah Al Khalifa"
+      ,
+      "Yar Muhammad RIND",
+      "MSWATI III"
+      ,
+      "TEA BANH, General",
+      "Sirojidin ASLOV"
+      ,
+      "Jose Antonio GARCIA BELAUNo Diplomatic Exchange",
+      "NUTH SOKHOM"
+      ,
+      "James BABA",
+      "Etienne SCHNEIDER"
+      ,
+      "Muhsin BILAL, Doctor",
+      "Adriano MALEIANE"
+      ,
+      "James MUSONI",
+      "Helgi AGUSTSSON",
+      'Afful, John Edward',
+      'Yasser REDA',
+      'Ersumer, Cumhur',
+      'Igwe AJA-NWACHUKWU',
+      'Ghoul, Omar',
+      'Saud NASEIRAT',
+      'Adou ASSOA',
+      'Benoit OUTTARA',
+      'Sultan, Sultan Hamid',
+      'PHAN PHIN (CPP)',
+      'Ilona JURSEVSKA',
+      'Polataivao, Fosi',
+      'Adnan BADRAN',
+      'SONG Soo-keun',
+      'Soccoh KABIA',
+      'Naot, Yehudit',
+      'Patrick Saidu CONTEH, Doctor',
+      'Rosalia CORTE-REAL',
+      'Mohammed LOULICHKI',
+      'TUNG Hsiang-lung',
+      'Yien TUT',
+      'Joe OLIVER',
+      'Ben Abdallah, Moncef',
+      'Zaha WAHEED',
+      'Philip BYARUHANGA',
+      'El Hossein EL OUARDI',
+      'Marto, Michel',
+      'Dupont, Christian',
+      'PHISIT Li-atham',
+      'Lubica LASSAKOVA',
+      'Frick, Mario',
+      'Ergash SHOISMATOV',
+      'Tomka, Peter',
+      'Essomba ETOUNDI',
+      'Musa, Hamid Majid',
+      'ABDALLAH bin Zayid al-Nuhayyan',
+      'Muci, Mustafa',
+      'CHALEUAN Yapaoher',
+      'Latifa AKHERBACH',
+      'Marian LUPU',
+      'Dsir ADADJA',
+      'Henry CHIMUNTHU-BANDA',
+      'Houssen Hassan IBRAHIM Minister, Ministry of Justice, Civil Service, Administrative, Administration Reform, Human Rights, &',
+      'Celestin NIYONGABO',
+      'Mujahid al-QAHALA',
+      'Nkongo, Maximin Paul N\'Koue', 'Muhammad Nidal al - SHA’AR', 'Ivan FOSCHI', 'Pelisge HARRISON', 'Nguyen Manh Kiem', 'Jean', 'Fahey,
+      John', 'Kuzvart,
+      Milos', 'Quliyev,
+      Vilayat', 'LIM Swee Say', 'Guillaume LONG', 'LIO Chao - hsuan', 'Alvarado Downing,
+      Guillermo', 'Lawan Gana BUBA', 'Guy Mikulu POMBO', 'Clarke,
+      Gline', 'Senaviratne,
+      Athauda', 'Mohamed EL OUAFA', 'Isch,
+      Edgar', 'Steve MAHAREY', 'Oleh PROSKURYAKOV', 'Aghvan VARDANYAN', 'Rosa Bautista,
+      Leonidas', 'Augusto DOS SANTOS', 'Maria de Fatima Monteiro JARodger Dodger !
+        IM', 'Luis Enrique MONTERROSO', 'Hubert OULAYE', 'Michael KEENAN', 'Latpov,
+      Ural', 'Anwar Muhammad al - GARGASH', 'Kazem VAZIRI - Hamaneh', 'Wellington SANDOVAL', 'Mangoaela,
+      Percy Metsing', 'Omar MANSOUR', 'Temirbek KURMANBEKOV', 'Hamlaoui,
+      Yahia', 'Saleem MANDVIWALLA', 'Hassan HARUNA', 'Hemida Ould Ahmed TALEB', 'Horacio SEVILLA Borja', 'PRASERT Boonchaisuk', 'Souley,
+      Hassane', 'Andre Ringui LE GAILLARodger Dodger ! ', 'Bahr Idris ABU GARodger Dodger !
+        A', 'Fouad Ali EL - HIMMA', 'Bessie Reen KACHERE', 'Jacques Ulrich RANDRIANTIANA', 'Djibril Yipene BASSOLE', 'John MUTORWA', 'Jovanovic,
+      Vladislav', 'Saud,
+      ABD AL - AZIZ bin Fahd bin Abd', 'Tokyo SEXWALE', 'Amina EL - GUINDI', 'Boubaker EL -
+        AKHZOURI', 'Rill,
+      Anton', 'Amos KIMUNYA', 'Imendia,
+      Francisco', 'Hamud Muhammad ABAD', 'Flores Facusse,
+      Carlos Roberto', 'Peter Paire O\'NEILL',
+      'Dias, Guilherme Gomes',
+      'Tonis LUKAS',
+      'Casali, Augusto',
+      'MAENG Hyung-kyu',
+      'Matteo FIORINI',
+      'Babamyrat TAGANOW',
+      'Webb, Maurine',
+      'Dayasritha TISSERA',
+      'Cristobal Menana ELA',
+      'Brasseur, Anne',
+      'Muhammetguly OGSHUKOV',
+      'Matuq, Abdallah al-',
+      'Godfridah Nsenduluka SUMAILI',
+      'Mountaga TALL',
+      'Yondo, Maurice',
+      'Levai, Katalin',
+      'Serra, Joao',
+      'Bornito De Sousa Baltazar DIOGO',
+      'Ravil SAFIULLIN',
+      'Satya Veyash FAUGOO',
+      'Svetozar MAROVIC',
+      'Ancil ANTOINE',
+      'Abdi Ibrahim Absieh',
+      'Karamatov, Hamidulla',
+      'Imbert, Colm',
+      'CHAN NYEIN',
+      'Nancy BAKIR',
+      'Alvear Valenzuela, Maria Soledad',
+      'Patricia GORodger Dodger!ON-PAMPLIN',
+      'MONGKHON Na Songkhla, Doctor',
+      'Georgios BABINIOTIS',
+      'Mendes, Luis Olundo',
+      'David HARUTYUNYAN',
+      'Milutinovic, Milan',
+      'Maris KUCINSKIS',
+      'Nabil Mohamed AHMED, Doctor',
+      'Krishna Bahadur MAHARA',
+      'Capoulas Santos, Luis Manuel',
+      'Ibrahim al-JAZI',
+      'Pecek, Zeljko',
+      'Tshipasa, Venant',
+      'Octavio SANCHEZ',
+      'ABDUL RAHMAN bin Mohamed Taib',
+      'Wisdom, Neville',
+      'Abdullah al-THINI',
+      'Cidalia CHAUQUE',
+      'Cheikh Bamba DIEYE',
+      'Snjezana SOLDAT',
+      'Dona Jean-Claude HOUSSOU',
+      'Jorge Alberto MOLINA Contreras',
+      'Mohamed Ould Mohamed Abderrahmane Ould MOINE',
+      'Te Ururoa FLAVELL',
+      'Maggie BARRY',
+      'Rakam CHEMJONG',
+      'Amr EZZAT SALAMA',
+      'Stepan KUBIV',
+      'Ichinkhorloo ERDENEBAATAR',
+      'Oscar MARTINEZ Doldan',
+      'Salehuddin AHMED',
+      'Lina Dolores POHL Alfaro',
+      'Gabriel Mosima “Tokyo” SEXWALE',
+      'Babatune OSOTIMEHIN',
+      'Nacer MEHAL',
+      'Christopher Kajoro CHIZA',
+      'Jose Luis CANCELA',
+      'Khushiram, Khushhal',
+      'Kimmo TILLIKAINEN',
+      'Spartak SEYRANIAN',
+      'Son Chong-ho',
+      'Weerawanni, Samaraweera',
+      'Jagmohan',
+      'Ronell GILES',
+      'Adama BICTOGO',
+      'Marino MURILLO Jorge',
+      'Hamadou MUSTAPHA',
+      'Eliseo RIO, Jr.',
+      'Malan, Pedro',
+      'Magtymguly BAYRAMDURDYYEW',
+      'Lang, Jack',
+      'Antonio de Aguiar PATRIOTA',
+      'Abdul Razaq WAHIDI',
+      'Rita, Cosme Afonso Da Trindade',
+      ' Obiang, Rene Ndemezo',
+      'Rebeca SANTOS',
+      'Arpad ERSEK',
+      'Mabandla, Bridgette',
+      'al-Fayez, Faisal',
+      'Anwar Muhammad GARGASH',
+      'Rup JYOTI',
+      'Gerry RITZ',
+      'Solange Pagonendji NDACKALA',
+      'CHUNG Dong-chea',
+      'Nunzia DE GIROLAMO',
+      'Rashid Hamad Muhammad al-HAMAD',
+      'Spatafora, Marcello',
+      'Hery RAJAONARIMAMPIANINA',
+      'Shatwan, Ahmad Fathi ibn',
+      'Van Dunem, Oswaldo de Jesus Serra',
+      'Mba, Fernando Mabale',
+      'Jabulani MABUZA',
+      'Mwakwere, Chirau Ali',
+      'Alain Guillaumme BUNYONI',
+      'Khalid TOUQAN',
+      'Mikael DAMBERG',
+      'Stagno, Bruno',
+      'PAK Song-ch\'ol', 'Abdallah Awabil MANTHUQ', 'Jose HERNANo Diplomatic ExchangeZ Bernardez', 'Halima Tayo ALAO', 'Chaves Bolanos,
+      Javier', 'Carlos Alberto DUBOY Sierra', 'Artur SILVA', 'Song Chong - ho', 'Jadranka KOSOR', 'ANSARI,
+      Majid,
+      Hojjat ol - Eslam', 'Petre TSISKARISHVILI', 'Adoum GARGOUM', 'Ollanta Moises HUMALA Tasso', 'Nduwimana,
+      Onesime', 'Mark WOYONGO', 'Salwai,
+      Charlot', 'Rania ABDEL MONIM,
+      Doctor', 'Andrzej CZUMA', 'Diego FUENTES Acosta', 'Rasit MEREDOW', 'YEO Yong Boon,
+      George,
+      Brigadier General', 'Limam Ould TEGUEDI', 'Bicakcic,
+      Edhem', 'Stuart Rowland ROBERT', 'Kumbakor,
+      Andrew', 'Patil,
+      Shivraj', 'Salamat AZIMI', 'Fio Selafi Joseph Purcell LAUTAFI', 'FELIPE VI', 'Sheila TLOU', 'Gusmao,
+      Jose Alexander', 'Zypries,
+      Brigitte', 'Dithny Joan RATON', 'Bassam AWADALLAH', 'Othom Rago AJAK', 'Xavier CASAL Rodriguez', 'Dube,
+      Alfred', 'Lucian Puiu GEORGESCU', 'Provoste,
+      Yasta', 'Djigui CAMARA', 'Kazhmurat NAGMANOV', 'SUWAPHAN Tanyuwattana', 'Michael MOROSKY,
+      Sir', 'Agni Prasad KHAREL', 'Johnnie K. SWARTZ', 'Koimdodov,
+      Kozidavlat', 'Lodhi,
+      Maleeha', 'Ali OSOBLE', 'Frederique VIDAL', 'Pape Gorgui NDONG', 'Nikolaos PAPPAS', 'Edita HRodger Dodger !
+        A', 'Justin NDIORO', 'Persis NAMUGANZA', 'Dinesh TRIVEDI', 'Salah JARRAR', 'Antoni JASZCZUK', 'Amadou SOUMAHORO', 'Enrique MENDOZA Ramirez', 'Mandandi,
+      Godden', 'Ibrahima KOUROUMA', 'Martins ROZE', 'Daniele BODINI', 'Shamsi,
+      Abd al - Aziz bin Nasir al - ', 'Atef OBEIDAT', 'Ali Abd al - Aziz al -
+        ISSAWI', 'Arun SINGH', 'Orlando Celso GARCIA Ramirez', 'Benedikt JOHANNESSON', 'Kahinda OTAFIIRE,
+      Colonel', 'Sharaf,
+      Ali Hamid al - ,
+      Captain', 'Viktor TOPOLOV', 'Kalinic,
+      Dragan', 'Salah Al Sayyed YOUSUF FARAG', 'Henry OKELLO ORYEM', 'CHU Ching -
+        yi (a.k.a. Cyrus CHU)', 'Aksenenko,
+      Nikolay Yemelyanovich', 'Margaret Mhango MWANAKATWE', 'Mamadou SIDIBE', 'Samuel SANTOS Lopez', 'Saad Al KHARABSHEH', 'O Kuk Ryol,
+      General', 'Kouyate,
+      Oumare', 'Sanoussy Bantama SOW', 'Rawhani,
+      Abd al - Wahhab al - ', 'Lagos Pizzati,
+      Victor Manuel', 'LEE Ju - ho', 'Michael MISKIN', 'Eila,
+      Mohammed Tahir', 'Jean - Pierre DARUWEZI Mokombe', 'Rawdhan Abd al - Aziz al -
+        RAWDHAN', 'Suat KILIC', 'Abdallah al - RABYA', 'Lu,
+      Annette', 'Abdallah Sulayman Abdallah Sulayman,
+      Professor', 'Hasan QAZIZADEH - Hashemi', 'Christabel NJIMBU', 'ABD al -
+        Aziz bin Atiyatallah al - Khalifa', 'Frafjord Johnson,
+      Hilde', 'Rock,
+      Allan', 'Henrik Sass LARSEN', 'Bao,
+      Yuntuvi', 'Naftali BENNETT', 'Jelena PIA - COMELLA', 'Mercedes JUAN LOPEZ', 'KIM Dong -
+        yeon', 'Alberto RIGAIL Arosemena', 'Gil,
+      Rosalia', 'Alfredo GOMEZ Urcuyo', 'Dalibor STYS', 'RI Kwang Gon', 'Rene FIGUEROA', 'Danilo TONINELLI', 'Hector DADA Hirezi', 'Claudio BISOGNIERO', 'Kabir HASHIM', 'Lin,
+      Feng - mei', 'Diakite Aissata TRAORE', 'Linda Amalia Sari GUMELAR', 'Velasquez,
+      Alfonso', 'Mohammad Jakir HUSSEIN', 'Ferrero - Waldner,
+      Benita', 'Miguel,
+      Girlyn', 'Michel BONGONGO', 'Masumeh EBTEKAR', 'Abdullah GUL', 'Greg CLARK', 'Mansour FAYE', 'Abd al -
+        Rahman Muhammad SHALGHAM', 'Abd al - Rahman Muhammad al - OWAIS', 'Ashton GRANEAU', 'Algirdas BUTKEVICIUS', 'Manohar PARRIKAR', 'Benjamin,
+      Charlie', 'Georgievski,
+      Ljubco', 'MAH Bow Tan', 'Bergen,
+      Ernst', 'M. Hatta RAJASA', 'Mohamed GHAZI', 'El - Mursi HEGAZY', 'Reem bin Ibrahim al -
+        HASHIMI', 'Serhiy TIHIPKO', 'Nezdet MUSTAFA', 'Vincent SSESMPIJJA', 'Joaquin ZEVALLOS', 'Tinatin KHIDASHELI', 'Gallardo,
+      Jorge', 'John Luk JOK', 'Merete RIISAGER', 'Nanan,
+      Adesh', 'Narayanan,
+      Kocheril Raman', 'Dharmendra PRADHAN', 'Cristian LARROULET Vignau', 'Paulo KASSOMA', 'Jawad Karim al -
+        BULANI', 'Cao Duc PHAT', 'Marcos JORGE de Lima', 'Alfonso DASTIS Quecedo', 'Hmeyda,
+      Zeidane Ould', 'Do Trung Ta', 'Eliud Ulises AYALA Zamora', 'Zdena ABAZAGIC', 'Ronald JUMEAU', 'Rodolfo MEDINA', 'Philip Bruce GOFF', 'Haiman EL TROUDI', 'Marisol ARGUETA de Barillas', 'Herrera Tello,
+      Maria Teresa', 'Ricardo Alberto ARIAS Arias', 'William Ni’i HAOMAE', 'Petsalnikos,
+      Filippos', 'Nelu Ioan BOTIS', 'Toledo,
+      Alejandro', 'Elvia Violeta MENJIVAR Escalante', 'Neil PARSAN', 'Beyshenaliyeva,
+      Neliya', 'Sarr,
+      Oumar', 'Aniceto EBIAKA Mohote', 'Manuel GONZALEZ Sanz', 'Falah Hasan al -
+        ZAYDAN', 'Mavroyiannis,
+      Andreas', 'Jeannette SANCHEZ', 'Karl - Theodor zu GUTTENBERG', 'Kuzmuk,
+      Oleksandr', 'Lovden,
+      Lars - Erik', 'Ylli MANJANI', 'Ganoo,
+      Alan', 'Navarrete Lopez,
+      Jorge', 'Carolina RENTERIA', 'Sadun Farhan al - DULAYMI', 'Betty TOLA', 'Sarah bint Yousef al -
+        AMIRI', 'Gayibov,
+      Charymammed', 'RASHID bin Abdallah Al Nuaymi', 'David LITTLEPROUD', 'Eduard GRAMA', 'Ze’ev BOIM', 'Pavlopoulos,
+      Prokopis', 'Kelly O\'DWYER',
+      'Kerekou, Mathieu',
+      'Mali Malie, Mpho') %>% as.data.table() %>% dplyr::rename(., "name" = ".") %>% return()
+  }
+  
+  
+  
+}
+
+# helper function to remove strings sequentially ------
+str_remove_strings_sequentially <- function(datatable, column, rm){
+  
+  tmp <- datatable %>% copy() %>% 
+    rename_columns(c(column), c("column")) %>% 
+    .[, column_clean := column]
+  
+  for(STR in rm){
+    
+    paste0("Removing: ", STR) %>% message_with_lines()
+    
+    tmp[, column_clean := stri_replace_all_fixed(column_clean, STR, "")]
+    
+  }    
+  
+  tmp %>% 
+    rename_columns(c("column", "column_clean"), c(column, paste0(column, "_clean"))) %>% 
+    return()
+  
+}
+
+standardize_text <- function(datatable, column, rm){
+  
+  # datatable <- scrapped_parliamentarians
+
+  datatable %>% copy() %>%  
+    rename_columns(current_names = c(column), new_names = c("column")) %>% 
+  .[, column := stri_trim_both(column)] %>% 
+    .[, column := toupper(column)] %>% 
+    str_remove_strings_sequentially(., column = "column", rm=rm) %>% 
+    .[, column_clean := stri_trans_general(column_clean, 'Any-ascii')] %>% 
+    rename_columns(current_names = c("column", "column_clean"), 
+                   new_names = c(column, paste0(column, "_clean"))) %>% 
+    return()
+  
+}
+
+# Section 3.1: clean names FASTER legacy -----
+standardize_name_column_dt_legacy <- function(
+    datatable, 
+    column, 
+    drop_common_titles_when_one_comma,
+    drop_common_titles_when_more_than_one_comma,
+    change_order_because_of_comma){
+  
+  # DELETE LATER
+  # datatable <- copy(cia_source_1920) 
+  # column <- "politician1"
+  # change_order_because_of_comma <- T
+  # drop_common_titles_when_one_comma <- T
+  # drop_common_titles_when_more_than_one_comma <- T
+  
+  paste0("Standardizing name column: (", column ,")") %>%
+    message_with_lines()
+
+    # 1) set-up: get original names ----
+  original_names <- names(datatable)
+  # keep original columns + clean column 
+  keep_these <- paste0(column, "_clean") %>% append(original_names, .)
+  
+  datatable_tmp <-  datatable %>% copy() %>% 
+    # 2)  create an internal column to reorder in the data in end ---- 
+  generate_internal_order_column(datatable = .) %>% 
+    # 3) rename 'column' for practicality ----
+  rename_columns(
+    datatable = .,
+    current_names = c(column),
+    new_names = c("column")) %>%
+    # 4) transliterate from latin1 to ASCII (simple 32-127 code point characters) ----
+  .[, column2 := stringi::stri_trans_general(column, 'Any-Latin') ] %>% 
+    .[, column2 := stringi::stri_trans_general(column2, 'Any-Latn') ] %>% 
+    .[, column2 := stringi::stri_trans_general(column2, 'Latin-ASCII') ] %>% 
+    # 5) everything upper case ----
+  .[, column2 := stringr::str_to_upper(column2)] %>% 
+    # 6) drop instances of multiple commas together
+    .[, column2 := stringr::str_replace(column2, pattern = ",,", replacement = ",")]  %>% 
+    # indicate number of commas 
+    .[, n_commas := stringr::str_count(column2, ",")]  %>% 
+    .[n_commas>0, column2 := str_remove_all_trailing_commas_and_spaces(column2) ] %>% 
+    .[, n_commas := stringr::str_count(column2, ",")] %>% 
+    .[, column2 := stringr::str_remove_all(column2, "\\n")] 
+  
+  paste0("1) String column has been transliterated into ASCII, upper case characters.") %>%  
+    message_with_lines()
+
+  # 6) deal with commas -----
+  
+  # 6.0)  split into three datatables depending on number of commas -----
+  contain_commas_char0 <- datatable_tmp %>% copy() %>% .[n_commas==0]
+  contain_commas_char1 <- datatable_tmp %>% copy() %>% .[n_commas==1]
+  contain_commas_char2 <- datatable_tmp %>% copy() %>% .[n_commas>1]
+  
+  # 6.1) for rows with more than one comma -----
+  if(drop_common_titles_when_more_than_one_comma){
+    
+    if(nrow(contain_commas_char2)>0){
+      
+      # 6.3: for rows with more than one comma ----
+      contain_commas_char2 %<>%
+        # drop titles 
+        str_remove_all_common_titles_dt2(
+          datatable = ., column = "column2",
+          prefixes = c(" ", " ", ","),
+          suffixes = c(" ", ",", " "), 
+          endswith = T, 
+          startswith =T
+        ) %>% 
+        str_remove_all_common_titles_dt2(
+          datatable = ., column = "column2",
+          prefixes = c(""),
+          suffixes = c(""), 
+          endswith = F, 
+          startswith =F, specific = get_common_tites(type="unambiguous")
+        ) %>% 
+        str_remove_all_common_titles_dt2(
+          datatable = ., column = "column2",
+          prefixes = c(" "),
+          suffixes = c(" "), 
+          endswith = F, 
+          startswith =F, specific = get_common_tites(type="educ_noperiod")
+        ) %>%  
+        # drop some pretty specific titles 
+        .[, column2 := str_trim_ws_iterate(column2)]  %>% 
+        # recompute number of commas
+        .[, n_commas := str_count(column2, ",")]  
+      
+      # store add with 0 commas to zero comma datatable
+      contain_commas_char0 <- contain_commas_char2 %>% copy() %>% 
+        .[n_commas==0] %>% 
+        rbind(contain_commas_char0, .) %>% 
+        .[order(INTERNAL_ORDER_COLUMN)]
+      
+      # store add with 1 comma to 1 comma datatable
+      contain_commas_char1 <- contain_commas_char2 %>% copy() %>% 
+        .[n_commas==1] %>% 
+        rbind(contain_commas_char1, .) %>% 
+        .[order(INTERNAL_ORDER_COLUMN)]
+      
+      # keep observations with more than one commas
+      contain_commas_char2 <- contain_commas_char2 %>% copy() %>% 
+        .[n_commas>1] %>% 
+        .[order(INTERNAL_ORDER_COLUMN)]
+      
+      
+      
+      "2.1) String column with many commas has had common titles removed & extra commas dropped." %>% 
+        message_with_lines()
+      
+      
+    }
+    
+  }
+  
+  # 6.2) For rows with one comma, remove titles & recompute # of commas ------
+  
+  if(drop_common_titles_when_one_comma){
+    
+    if(nrow(contain_commas_char1) >0){
+
+      # 6.3: for rows with more than one comma ----
+      contain_commas_char1 %<>%
+        # drop titles 
+        str_remove_all_common_titles_dt2(
+          datatable = ., column = "column2",
+          prefixes = c(" ", " ", ","),
+          suffixes = c(" ", ",", " "), 
+          endswith = T, 
+          startswith =T
+        ) %>% 
+        str_remove_all_common_titles_dt2(
+          datatable = ., column = "column2",
+          prefixes = c(""),
+          suffixes = c(""), 
+          endswith = F, 
+          startswith =F, specific = get_common_tites(type="unambiguous")
+        ) %>% 
+        str_remove_all_common_titles_dt2(
+          datatable = ., column = "column2",
+          prefixes = c(" "),
+          suffixes = c(" "), 
+          endswith = F, 
+          startswith =F, specific = get_common_tites(type="educ_noperiod")
+        ) %>%  
+        .[, column2 := str_trim_ws_iterate(column2)]  %>%
+      # recompute number of commas
+        .[, n_commas := str_count(column2, ",")]  
+      
+      # store add with 0 commas to zero comma datatable
+      contain_commas_char0 <- contain_commas_char1 %>% copy() %>% 
+        .[n_commas==0] %>% 
+        rbind(contain_commas_char0, .) %>% 
+        .[order(INTERNAL_ORDER_COLUMN)]
+      
+      # store add with 1 comma to 1 comma datatable
+      contain_commas_char1 <- contain_commas_char1 %>% copy() %>% 
+        .[n_commas==1] %>% 
+        .[order(INTERNAL_ORDER_COLUMN)]
+      
+      
+      paste0("2.2) String column with one comma has had common titles removed & extra commas dropped.") %>% 
+        message_with_lines()
+      
+      
+    }
+    
+  }
+  
+  # 6.3) for rows with just one comma, change order due to commas -----
+  
+  if(change_order_because_of_comma){
+    if(nrow(contain_commas_char1) >0){
+      
+      # 6.3.1) for rows with one comma only, revert order -----
+      contain_commas_char1 %<>% 
+        # to avoid conflicting column names, rename column once more (then name back after operation)
+        rename_columns(
+          current_names = c("column"), 
+          new_names = c("MAINCOLUMN") 
+        ) %>% 
+        # invert name order over comas
+        str_invert_order_given_one_comma(
+          datatable = ., column = "column2") %>% 
+        # rename back
+        rename_columns(
+          current_names = c("MAINCOLUMN"), 
+          new_names = c("column") 
+        ) 
+      
+      "Notice!! The warning message for: (str_invert_order_given_one_comma) is addressed in the code!" %>% 
+        message()
+      
+      
+      paste0(
+        "3) The order of elements with one comma in (", column, ") has been inverted.",
+        " E.g. [Lname, Fname] becomes [Fname Lname]. An indicator n_commas let's us know the number of commas.", 
+        " If an element contains multiple commas, nothing is done.") %>% 
+        message_with_lines()
+      
+      
+      
+    }
+    
+    
+  }
+  
+  # 6.4)  rbind into three datatables depending on number of commas -----
+  
+
+  paste0(
+    "4) Additional punctuation and non-characters have been cleaned &/or removed.") %>% 
+    message_with_lines()
+  
+  contain_commas_char0 %>%
+    rbind(., contain_commas_char1) %>%
+    rbind(., contain_commas_char2) %>%
+    
+    # 7) drop all punctuation & double spaces ----
+  .[, column2 := str_replace_all(column2, pattern = "[[:punct:]]", replacement = " ")] %>%
+    # 8) remove all double spaces ------
+  # 8.1) need to rename `column`
+  rename_columns(current_names = c("column"),
+                 new_names = c("column_original")) %>%
+    # replace double spaces
+    str_replace_all_double_spaces(datatable = ., column = "column2") %>%
+    # rename back
+    rename_columns(current_names = c("column_original"),
+                   new_names = c("column"))  %>%
+    # remove some additional things -----
+  .[str_detect(column2, "\\u008e"), column2 := stringr::str_replace(column2, pattern = "\\u008e", replacement =  "Z")] %>%
+    .[str_detect(column2, "\\u0092"), column2 := stringr::str_remove(column2, pattern = "\\u0092")] %>%
+    .[str_detect(column2, "\\u0093"), column2 := stringr::str_remove(column2, pattern = "\\u0093")] %>%
+    .[str_detect(column2, "\\u0094"), column2 := stringr::str_remove(column2, pattern = "\\u0094")] %>%
+    .[str_detect(column2, "\\\177"), column2 := stringr::str_remove(column2, pattern = "\\\177")] %>%
+    .[str_detect(column2, "\\\177"), column2 := stringr::str_remove(column2, pattern = "\\\177")] %>%
+    .[str_detect(column2, "\u009a"), column2 := stringr::str_replace(column2, pattern = "\u009a", replacement = "S")]  %>%
+    .[str_detect(column2,  "\\^"), column2 := stringr::str_remove(column2, pattern = "\\^")] %>%
+    
+    
+    .[str_detect(column2, "\\`"), column2 := stringr::str_remove(column2, pattern = "\\`")] %>%
+    .[str_detect(column2, "\\+"), column2 := stringr::str_remove(column2, pattern = "\\+")] %>%
+    .[str_detect(column2, "\\>"), column2 := stringr::str_remove(column2, pattern = "\\>")] %>%
+    .[str_detect(column2, "\\<"), column2 := stringr::str_remove(column2, pattern = "\\<")] %>%
+    .[str_detect(column2, "\\^"), column2 := stringr::str_remove(column2, pattern = "\\^")] %>%
+    .[str_detect(column2, "³"), column2 := stringr::str_remove(column2, pattern = "³")] %>%
+    .[str_detect(column2, "/"), column2 := stringr::str_remove(column2, pattern = "/")] %>%
+    .[, column2 := str_trim_ws_iterate(string = column2, whitespace = " ")] %>% 
+    # rename finalized columns  -----
+  rename_columns(datatable = ., 
+                 current_names = c("column", "column2"), 
+                 new_names = c(column, paste0(column, "_clean"))) %>% 
+    # subset to relevant columns + new, clean column 
+    .[, ..keep_these] %>% 
+    return()
+  
+  
+}
+
+# Section 3.2: given a data.table with a character col, indicate what needs to be removed ----
+str_remove_all_strings_and_single_letters <- function( # used to be drop_strings
+    datatable,
+    strings=c(" DE ", " DA ", " DO ", " DAS ", " DOS "),
+    name_column="name", 
+    drop_single_letters=T){
+  
+  
+  # datatable <- main %>% copy() 
+  # name_column <- "name"
+  
+  # rename for convenience
+  datatable <- datatable %>% copy() %>% 
+    rename_columns(datatable=.,
+                   current_names=c(name_column),
+                   new_names=c("name_column"))
+  
+  
+  # create a crosswalk between the original name and the clean name
+  name_dt <-  datatable %>% copy() %>%
+    .[, .(name_column)] %>%
+    # everything upper case
+    .[, name_clean := str_to_upper(name_column)]
+  
+  # strings to be removed
+  if(drop_single_letters){
+    
+    # drop individual letters
+    remove_these <- LETTERS %>% paste0(" ", ., " ") %>%    
+      append(strings)
+    print("Dropping strings which match the 'strings' list or are single letters with spaces.")
+  }else{
+    # drop specifed strings only
+    remove_these <- strings
+    print("Dropping strings which match the 'strings' list.")
+  }
+  
+  
+  # for each string, remove it from the
+  for(string in remove_these) {
+    # delete later
+    # string <- strings[1]
+    
+    x_second_sleep(x = 0.0001, additional = string)
+    
+    name_dt$name_clean <- name_dt %>%
+      .[, .(name_clean)] %>%
+      # remove all of the strings and unmatchable single letter names
+      apply(.,
+            2,
+            str_replace_all,
+            pattern = string,
+            replacement = " ") %>%
+      as.data.table()
+    
+  }
+  
+  out <- cbind(datatable, name_dt[, .(name_clean)])
+  
+  # rename for consistency
+  out <- out %>% copy() %>% 
+    rename_columns(datatable=.,
+                   current_names=c("name_column"),
+                   new_names=c(name_column))
+  
+  
+  return(out)
+  
+}
+
+# Section 3.3: split name column by a pattern -----
+str_split_column_by_pattern <- function( # used to be split_names_by_pattern
+    datatable, 
+    str_column = "name_clean", 
+    pattern=" "){ 
+  
+  # rename columns for convenience
+  datatable <- restr_columns(datatable=datatable,
+                              current_names=c(str_column),
+                              new_names=c("str_column"))
+  
+  # split names by space
+  name_dt_pre_split <- datatable %>% copy() %>%
+    .[, name_count := str_count(str_column, pattern)+1]
+  
+  # get max number of surnames in data
+  max_name_count <- name_dt_pre_split %>% .[, max(name_count)]
+  
+  # split by spaces
+  name_dt_split <- name_dt_pre_split %>% copy() %>%
+    # split names into six names at most
+    .[, paste0("str_column", c(1:max_name_count)) := tstrsplit(x = str_column, pattern, fixed =
+                                                                  TRUE)] 
+  
+  # get current column names to be renamed
+  str_columnX <- paste0("str_column", c(1:max_name_count)) %>% append("str_column")
+  # and what they should be
+  str_columnX_out <- paste0(str_column, c(1:max_name_count)) %>% append(str_column)
+  
+  # rename columns for consistency
+  out <- restr_columns(datatable=name_dt_split,
+                        current_names=str_columnX,
+                        new_names=str_columnX_out)
+  
+  return(out)
+  
+}
+
+# Section 3.4: split column names -----
+str_split_column_by_space <- function( # used to be split_names_by_space
+    datatable, str_column = "name_clean"){
+  
+  
+  out <- split_names_by_pattern(datatable=datatable, str_column = str_column, pattern = " ")
+  
+  return(out)
+  
+}
+
+# Section 3.5: str_replace for all double spaces ------
+str_replace_all_double_spaces <- function(datatable, column, replacement = " "){
+  
+  keep_these <- names(datatable)
+  
+  datatable <- datatable %>% copy() %>% 
+    rename_columns(
+      datatable = .,
+      current_names = c(column), 
+      new_names = c("column")
+    ) 
+  
+  # check to see max number of iterations 
+  max_double_spaces <- datatable %>%
+    .[, num_double_spaces := str_count(string = column, "  ") ] %>% 
+    .[, max(num_double_spaces)]
+  
+  i <- 1
+  while(i<max_double_spaces+1){
+    
+    datatable <- datatable %>% .[, column := str_replace_all(string = column, pattern = "  ", replacement = replacement) ]
+    i <- i + 1
+    
+  }
+  
+  datatable %>% copy() %>% 
+    rename_columns(
+      datatable = .,
+      current_names = c("column"), 
+      new_names = c(column)
+    ) %>% 
+    .[, ..keep_these] %>%  
+    return()
+  
+}
+
+# Section 3.6: remove anything in parentheses -----
+str_remove_anything_in_parenthesis <- function(string){
+  
+  pattern <- paste0("\\((.*?)\\)")
+  
+  string %>%
+    sub(pattern = pattern,
+        replacement = "",
+        x = .) %>% 
+    return()
+  
+  
+}
+
+# Section 3.7: remove all dates -----
+str_remove_all_dates <- function(string, date_pattern = "dd MMM yyyy" ){
+  
+  warning("For the date_pattern: lower case corresponds to numbers, upper case corresponds to characters, spaces are spaces.")
+  
+  pattern <- ""
+  
+  if(date_pattern == "dd MMM yyyy"){
+    pattern <-  "(\\d{2}).*(\\w{3}).*(\\d{4})"}
+  if(date_pattern == "d MMM yyyy"){
+    pattern <-  "(\\d{1}).*(\\w{3}).*(\\d{4})"}
+  if(date_pattern == "MMM dd yyyy"){
+    pattern <-  "(\\w{3}).*(\\d{2}).*(\\d{4})"}
+  if(date_pattern == "dd mm yyyy"){
+    pattern <-  "(\\d{2}).*(\\d{2}).*(\\d{4})"}
+  if(date_pattern == "dd mm yy"){
+    pattern <-  "(\\d{2}).*(\\d{2}).*(\\d{2})"}
+  
+  string %>%
+    sub(pattern = pattern,
+        replacement = "",
+        x = .) %>% 
+    return()
+  
+}
+
+# Section 3.8: remove all after and including pattern -----
+str_remove_all_after_and_including_pattern <- function(string, pattern){
+  
+  # string <- "LEE, HSIEN LOONG, BRIGADIER   GENERAL (RES.)" 
+  # pattern <- "BRIGADIER"
+  
+  all_after_and_including_pattern <- paste0("(", pattern, ")(.*)")
+  
+  string %>%
+    #str_replace_all(string = ., pattern = pattern, replacement = paste0(" ", pattern, " ") ) %>% 
+    sub(pattern = all_after_and_including_pattern,
+        replacement = "",
+        x = .) %>% 
+    return()
+  
+}
+
+# Section 3.9: trim white space while it still exists ------
+str_trim_ws_iterate <- function(string, whitespace=" "){
+  
+  #string <- c(" asdfa asdf ", ", asdf ,asdf ", "sdfadfs ", "   sdf, ", "     d")
+  
+  i <- 0
+  
+  while(sum(startsWith(string, whitespace))>0|sum(endsWith(string, whitespace))>0){
+  
+    i <- i  + 1 
+    
+    paste0("Cleaning whitespaces: Iteration: ", i) %>% message_with_lines() 
+     
+    if(whitespace==" "){
+      
+      string %<>% 
+        stringr::str_trim(., side = "both")
+      
+    }else{
+      string %<>% 
+        trimws(., whitespace = whitespace)
+    }
+
+    
+  }
+  
+  string %>% return()
+  
+  
+}
+
+# 3.10 detect the most common string by group ------
+str_detect_most_common_string_by_group_old <- function(
+    datatable, 
+    by_columns, 
+    str_column, 
+    na.rm=T,
+    first="random", 
+    suffix="per_group"){
+  
+  # set-up -----
+  by_cols <- by_columns
+  by_cols_alt <- 1:length(by_cols) %>% paste0("by_col", .)
+  by_cols_alt_str_col <- by_cols_alt %>% append(c("str_col"))
+  
+  # catch errors 
+  if(str_column %chin% by_cols){
+    errorCondition("str_column is contained in by_columns. ")
+  }
+  
+  # rename columns 
+  datatable %<>% 
+    rename_columns(
+      current_names = by_cols, 
+      new_names = by_cols_alt 
+    ) %>%
+    rename_columns(
+      current_names = str_column, 
+      new_names = "str_col" 
+    ) 
+  
+  # select most common
+  tmp <- datatable %>% copy() %>% 
+    # compute N observatios per group & str_col
+    .[, .N, by_cols_alt_str_col] %>% 
+    # by the by_cols, get the most frequent occurance
+    .[, max_N_by_cols:= ifelse(
+      na.rm==T, yes = max(N, na.rm=T), max(N, na.rm=T)), by_cols_alt]   %>%
+    # restrict to most frequent per group 
+    .[max_N_by_cols==N] 
+  
+  # in case of ties, reshuffle for random or order for alphabetical
+  if(first=="random"){
+    tmp %<>%
+      # random shuffle
+      .[sample(.N, .N, replace = F)]
+  }
+  if(first=="alphabetical"){
+    tmp %<>%
+      # random shuffle
+      .[order(str_col)]
+  }
+  if(first=="rev_alphabetical"){
+    tmp %<>%
+      # random shuffle
+      .[order(-str_col)]
+  }
+  
+  
+  # now remove any duplicates
+  tmp %>% 
+    # drop duplicated by_column groups
+    .[, agg_level := .GRP, by_cols_alt ] %>% 
+    .[!duplicated(agg_level)] %>% 
+    .[, agg_level := NULL] %>% 
+    .[, max_N_by_cols := NULL] %>% 
+    # rename to show the number of occurrences (in case ) 
+    rename_columns(
+      current_names = c("str_col"), 
+      new_names = c(paste0(str_column, "_most_common"))
+    ) %>% 
+    rename_columns(
+      current_names = c("N"), 
+      new_names = c(
+        paste0(str_column, "_N_", suffix))
+    ) %>% 
+    merge(
+      y =., x = datatable,
+      by = by_cols_alt, all=T) %>% 
+    # rename to show the number of occurrences (in case ) 
+    rename_columns(
+      current_names = by_cols_alt, 
+      new_names = by_cols)  %>% 
+    rename_columns(
+      current_names = c("str_col"), 
+      new_names = c(paste0(str_column))
+    ) %>% 
+    return()
+  
+  
+}
+
+# detect the most common string by group ------
+str_detect_most_common_string_by_group <- function(
+    datatable, 
+    by_columns, 
+    str_column, 
+    na.rm=T,
+    first="random", 
+    suffix="per_group"){
+  
+  # 
+  # datatable = ipu_compare2
+  # by_columns = c("chamber_id") 
+  # str_column = "country_iso2" 
+  # na.rm=T
+  # first="random"
+  # suffix=""
+  
+  # set-up -----
+  by_cols <- by_columns
+  by_cols_alt <- 1:length(by_cols) %>% paste0("by_col", .)
+  by_cols_alt_str_col <- by_cols_alt %>% append(c("str_col"))
+  
+  # catch errors 
+  if(str_column %chin% by_cols){
+    errorCondition("str_column is contained in by_columns. ")
+  }
+  
+  # rename columns 
+  datatable %<>% 
+    rename_columns(
+      current_names = by_cols, 
+      new_names = by_cols_alt 
+    ) %>%
+    rename_columns(
+      current_names = str_column, 
+      new_names = "str_col" 
+    ) 
+  
+  if(na.rm==T){
+    
+    # select most common
+    tmp <- datatable %>% copy() %>% 
+      .[!is.na(str_col)] %>% 
+      # compute N observatios per group & str_col
+      .[, .N, by_cols_alt_str_col] %>% 
+      # by the by_cols, get the most frequent occurance
+      .[, max_N_by_cols:= ifelse(
+        na.rm==T, yes = max(N, na.rm=T), max(N, na.rm=T)), by_cols_alt]   %>%
+      # restrict to most frequent per group 
+      .[max_N_by_cols==N] 
+    
+  }else{
+    
+    
+    
+    # select most common
+    tmp <- datatable %>% copy() %>% 
+      # compute N observatios per group & str_col
+      .[, .N, by_cols_alt_str_col] %>% 
+      # by the by_cols, get the most frequent occurance
+      .[, max_N_by_cols:= ifelse(
+        na.rm==T, yes = max(N, na.rm=T), max(N, na.rm=T)), by_cols_alt]   %>%
+      # restrict to most frequent per group 
+      .[max_N_by_cols==N] 
+    
+  }
+  
+  
+  # in case of ties, reshuffle for random or order for alphabetical
+  if(first=="random"){
+    tmp %<>%
+      # random shuffle
+      .[sample(.N, .N, replace = F)]
+  }
+  if(first=="alphabetical"){
+    tmp %<>%
+      # random shuffle
+      .[order(str_col)]
+  }
+  if(first=="rev_alphabetical"){
+    tmp %<>%
+      # random shuffle
+      .[order(-str_col)]
+  }
+  
+  
+  # now remove any duplicates
+  tmp %>% 
+    # drop duplicated by_column groups
+    .[, agg_level := .GRP, by_cols_alt ] %>% 
+    .[!duplicated(agg_level)] %>% 
+    .[, agg_level := NULL] %>% 
+    .[, max_N_by_cols := NULL] %>% 
+    # rename to show the number of occurrences (in case ) 
+    rename_columns(
+      current_names = c("str_col"), 
+      new_names = c(paste0(str_column, "_most_common"))
+    ) %>% 
+    rename_columns(
+      current_names = c("N"), 
+      new_names = c(
+        paste0(str_column, "_N_", suffix))
+    ) %>% 
+    merge(
+      y =., x = datatable,
+      by = by_cols_alt, all=T) %>% 
+    # rename to show the number of occurrences (in case ) 
+    rename_columns(
+      current_names = by_cols_alt, 
+      new_names = by_cols)  %>% 
+    rename_columns(
+      current_names = c("str_col"), 
+      new_names = c(paste0(str_column))
+    ) %>% 
+    return()
+  
+  
+}
+
+
+
+
+
+# Section 3.10: remove all trailing commas and spaces
+str_remove_all_trailing_commas_and_spaces <- function(string){
+
+  while((sum(endsWith(string, " "))>0)|(sum(endsWith(string, ","))>0)){
+    
+    string %<>% 
+      trimws(., whitespace = " ") %>%  
+      trimws(., whitespace = ",") 
+    
+  }
+  
+  string %>% return()
+  
+  
+}
+
+# Section 3.11: get a vector of common titles  --------
+get_common_tites <- function(type = "educ_period") {
+
+  possible_titles <-c(
+    "educ_all",
+    "educ_unambiguous",
+    "educ_period",
+    "educ_noperiod",
+    "educ_noperiod_very_ambiguous",
+    "military",
+    "military_unambiguous",
+    "poli",
+    "oth", 
+    "unambiguous")
+  
+  if ((!(type %in% possible_titles))|type=="") {
+    
+    warning <- possible_titles %>%
+      glue::glue_collapse(x = ., sep = ", ") %>%
+      paste0("Possible types are: ", .)  
+    message_with_lines(warning)
+    out <- NULL
+    
+  }
+  
+  #  definitions ---------
+  # every day & educational 
+  educ_unambiguous <-   c("DOCTOR",
+  "ESQUIRE",
+  "PROFESSOR")
+  # every day & educational 
+  educ_noperiod <- c(
+    "MR",
+    "MSR",
+    "MS",
+    "BSC",
+    "MSC" ,
+    "MBA" ,
+    "MD",
+    "PHD",
+    "DR" ,
+    "LLM",
+    "LLB",
+    "PROF")
+  
+  educ_noperiod_very_ambiguous <- c(
+    "BA",
+    "MA"
+  )
+  # every day & educational 
+  educ_period <- 
+    c(
+      "B\\.A\\.",
+      "MR\\." ,
+      "MSR\\." ,
+      "MS\\.",
+      "BSC\\.",
+      "MSC\\.",
+      "MBA\\.",
+      "MA\\." ,
+      "MD\\." ,
+      "PH\\.D\\.",
+      "PHD\\." ,
+      "DR\\." ,
+      "LLM\\." ,
+      "LLB\\.",
+      "PROF\\.",
+      "ENG\\.",
+      "POL.",
+      "B.A.",
+      "MR." ,
+      "MSR." ,
+      "MS.",
+      "BSC.",
+      "MSC.",
+      "MBA.",
+      "MA." ,
+      "MD." ,
+      "PH.D.",
+      "PHD." ,
+      "DR." ,
+      "LLM." ,
+      "LLB.",
+      "PROF.",
+      "ENG.",
+      "POL."
+    ) 
+  # military
+  military_unambiguous <- c(
+    'COMMAND CHIEF MASTER SERGEANT',
+    'MASTER CHIEF PETTY OFFICER',
+    'SENIOR CHIEF PETTY OFFICER',
+    'LIEUTENANT JUNIOR GRADE',
+    'MASTER GUNNERY SERGEANT',
+    'SENIOR MASTER SERGEANT',
+    'COMMAND SERGEANT MAJOR',
+    'CHIEF WARRANT OFFICER',
+    'CHIEF MASTER SERGEANT',
+    'SERGEANT FIRST CLASS',
+    'LIEUTENANT COMMANDER',
+    'PRIVATE FIRST CLASS',
+    'CHIEF PETTY OFFICER',
+    'LIEUTENANT GENERAL',
+    'LIEUTENANT COLONEL',
+    'OF THE MARINE CORP',
+    'SECOND LIEUTENANT',
+    'BRIGADIER GENERAL',
+    'SEAMAN APPRENTICE',
+    'FIRST LIEUTENANT',
+    'OF THE AIR FORCE',
+    'GUNNERY SERGEANT',
+    'WARRANT OFFICER',
+    'MASTER SERGEANT',
+    'FIRST SERGEANT',
+    'SERGEANT MAJOR',
+    'STAFF SERGEANT',
+    'SEAMAN RECRUIT',
+    'LANCE CORPORAL',
+    'SENIOR AIRMAN',
+    'MAJOR GENERAL',
+    'PETTY OFFICER',
+    'AIRMAN BASIC',
+    'VICE ADMIRAL',
+    'REAR ADMIRAL',
+    'SECOND CLASS',
+    'OF THE ARMY',
+    'FIRST CLASS',
+    'THIRD CLASS',
+    'OF THE NAVY',
+    'SPECIALIST',
+    'LIEUTENANT',
+    'TECHNICAL',
+    'COMMANDER',
+    '1ST CLASS',
+    '2ND CLASS',
+    '3RD CLASS',
+    '(RETIRED)',
+    'AIR CHIEF',
+    'RESERVIST',
+    'SERGEANT',
+    'CORPORAL',
+    'GENERAL',
+    'COLONEL',
+    'CAPTAIN',
+    'ADMIRAL',
+    'PRIVATE',
+    'RESERVE'#,
+    #'MAJOR'
+  )
+  # military
+  military_short <-  c(
+    'MAJOR',
+    'CAPT\\.',
+    'CMDR\\.',
+    'BRIG\\.',
+    'RADM\\.',
+    'CORPS',
+    'SGT\\.',
+    'MAJ\\.',
+    'GEN\\.',
+    'COL\\.',
+    'CPL\\.',
+    'SPC\\.',
+    'ADM\\.',
+    'PFC\\.',
+    'PVT\\.',
+    'DIV\\.',
+    'MAR\\.',
+    'RES\\.',
+    'LT\\.',
+    'FD\\.',
+    'CAPT.',
+    'CMDR.',
+    'BRIG.',
+    'RADM.',
+    'CORPS',
+    'SGT.',
+    'MAJ.',
+    'GEN.',
+    'COL.',
+    'CPL.',
+    'SPC.',
+    'ADM.',
+    'PFC.',
+    'PVT.',
+    'DIV.',
+    'MAR.',
+    'RES.',
+    'LT.',
+    'FD.'
+  )
+  # political & religious
+  poli <- c(
+    "SIR",
+    "LORD",
+    "ACTING",
+    "PRINCESS",
+    "PRINCE",
+    "ARCHBISHOP",
+    "VICE",
+    "PRESIDENT",
+    "CHAIRMAN",
+    "MIN\\.",
+    "CHIEF",
+    "AYATOLLAH",
+    "CROWN",
+    "HOJJAT OL-ESLAM",
+    "REVEREND",
+    "BISHOP"
+  )
+  
+  oth <- c(
+    "DIRECTOR"
+  )
+  
+  # select vectors 
+
+  if (type == "educ_all") {out <- append(educ_period, educ_noperiod, educ_unambiguous) }
+  if (type == "educ_unambiguous") {out <- educ_unambiguous}
+  if (type == "educ_period") {out <-educ_period}
+  if (type == "educ_noperiod") {out <-educ_noperiod}
+  if (type == "educ_noperiod_very_ambiguous") {out <-educ_noperiod_very_ambiguous}
+  if (type == "military") {out <- append(military_short, military_unambiguous)}
+  if (type == "military_unambiguous") {out <-military_unambiguous}
+  if (type == "poli") {out <-  poli}
+  if (type == "oth") {out <- oth}
+  if(type == "unambiguous"){
+    out <- append(military_unambiguous, educ_unambiguous)  
+  }
+  
+  out <- out %>% 
+    as.data.table() %>% 
+    .[, `.`:=str_to_upper(`.`)] %>% 
+    .[, .N, `.`] %>% 
+    .[, nchar := nchar(`.`)] %>% 
+    .[order(-nchar)] %>% 
+    .[, `.`] %>% return()
+  
+}
+
+
+# given a data.table with a character col, indicate what needs to be removed ----
+drop_strings <- function(datatable,
+                         strings=c(" DE ", " DA ", " DO ", " DAS ", " DOS "),
+                         name_column="name", 
+                         drop_single_letters=T){
+  
+  
+  # datatable <- main %>% copy() 
+  # name_column <- "name"
+  
+  # rename for convenience
+  datatable <- datatable %>% copy() %>% 
+    rename_columns(datatable=.,
+                   current_names=c(name_column),
+                   new_names=c("name_column"))
+  
+  
+  # create a crosswalk between the original name and the clean name
+  name_dt <-  datatable %>% copy() %>%
+    .[, .(name_column)] %>%
+    # everything upper case
+    .[, name_clean := str_to_upper(name_column)]
+  
+  # strings to be removed
+  if(drop_single_letters){
+    
+    # drop individual letters
+    remove_these <- LETTERS %>% paste0(" ", ., " ") %>%    
+      append(strings)
+    print("Dropping strings which match the 'strings' list or are single letters with spaces.")
+  }else{
+    # drop specifed strings only
+    remove_these <- strings
+    print("Dropping strings which match the 'strings' list.")
+  }
+  
+  
+  # for each string, remove it from the
+  for(string in remove_these) {
+    # delete later
+    # string <- strings[1]
+    
+    x_second_sleep(x = 0.0001, additional = string)
+    
+    name_dt$name_clean <- name_dt %>%
+      .[, .(name_clean)] %>%
+      # remove all of the strings and unmatchable single letter names
+      apply(.,
+            2,
+            str_replace_all,
+            pattern = string,
+            replacement = " ") %>%
+      as.data.table()
+    
+  }
+  
+  out <- cbind(datatable, name_dt[, .(name_clean)])
+  
+  # rename for consistency
+  out <- out %>% copy() %>% 
+    rename_columns(datatable=.,
+                   current_names=c("name_column"),
+                   new_names=c(name_column))
+  
+  
+  return(out)
+  
+}
+
+# split column names -----
+split_names_by_space <- function(datatable, name_column = "name_clean"){
+  
+  
+  out <- split_names_by_pattern(datatable=datatable, name_column = name_column, pattern = " ")
+  
+  
+}
+
+# split name column by a pattern -----
+split_names_by_pattern <- function(datatable, name_column = "name_clean", pattern=" "){
+  
+  # rename columns for convenience
+  datatable <- rename_columns(datatable=datatable,
+                              current_names=c(name_column),
+                              new_names=c("name_column"))
+  
+  # split names by space
+  name_dt_pre_split <- datatable %>% copy() %>%
+    .[, name_count := str_count(name_column, pattern)+1]
+  
+  # get max number of surnames in data
+  max_name_count <- name_dt_pre_split %>% .[, max(name_count)]
+  
+  # split by spaces
+  name_dt_split <- name_dt_pre_split %>% copy() %>%
+    # split names into six names at most
+    .[, paste0("name_column", c(1:max_name_count)) := tstrsplit(x = name_column, pattern, fixed =
+                                                                  TRUE)] 
+  
+  # get current column names to be renamed
+  name_columnX <- paste0("name_column", c(1:max_name_count)) %>% append("name_column")
+  # and what they should be
+  name_columnX_out <- paste0(name_column, c(1:max_name_count)) %>% append(name_column)
+  
+  # rename columns for consistency
+  out <- rename_columns(datatable=name_dt_split,
+                        current_names=name_columnX,
+                        new_names=name_columnX_out)
+  
+  return(out)
+  
+}
+
+
+# Section 3.12.1: drop common titles from strings: helper functions -------
+str_remove_all_common_titles <- function(vector, prefix="", suffix="", specific=NULL){
+  
+  if(is.null(specific)){
+  # load common titles 
+  common_titles <- get_common_tites(type = "educ_period") %>% 
+    append(
+      ., get_common_tites(type = "educ_unambiguous")) %>% 
+    append(
+      ., get_common_tites(type = "military")) %>%
+    append(
+      ., get_common_tites(type = "oth")) %>% 
+    append(
+      ., get_common_tites(type = "poli"))
+  }else{
+    common_titles <- specific
+  }
+  
+  for(title in common_titles){
+    
+    title <- paste0(prefix, title, suffix)
+    
+    paste0("Removing common title in parenthesis: (", title,"). This includes the specified prefix & suffix.") %>% 
+      message_with_lines()
+    
+    vector <- str_remove_all(string = vector, pattern = title) 
+    
+  }
+  
+  vector %>% 
+    # DROP double commas again
+    str_replace_all(., ",,", ",")   %>% 
+    str_replace_all(., ", ,", ",")   %>% 
+    return()
+}
+
+# Section 3.12.2: drop common titles from strings: helper functions -------
+str_remove_all_common_titles_dt <- function(datatable,
+                                            column,
+                                            prefixes = c(" ", ",", ",", " "),
+                                            suffixes = c(" ", ",", " ", ","),
+                                            startswith = T,
+                                            endswith = T,
+                                            specific = NULL) {
+  # datatable <- peppercat_out_yearly
+  # column <- "person_name"
+  # prefixes <- c(" ", ",", ",", " ")
+  # suffixes <- c(" ", ",", " ", ",")
+  
+  if (length(prefixes) != length(suffixes)) {
+    errorCondition(message = "Length of prefixes must match length of suffixes!")
+  }
+  
+  # set up
+  dt <- copy(datatable) %>%
+    rename_columns(current_names = c(column),
+                   new_names = c("col")) %>%
+    generate_internal_order_column(.)
+  
+  
+  # extract common titles
+  if (is.null(specific)) {
+    # load common titles
+    common_titles <- get_common_tites(type = "educ_period") %>%
+      append(., get_common_tites(type = "educ_unambiguous")) %>%
+      append(., get_common_tites(type = "military")) %>%
+      append(., get_common_tites(type = "oth")) %>%
+      append(., get_common_tites(type = "poli"))
+  } else{
+    common_titles <- specific
+  }
+  
+  # unconstrained
+  for (i in 1:length(prefixes)) {
+    
+    prefix <- prefixes[i]
+    suffix <- suffixes[i]
+    
+    for (title in common_titles) {
+      title_to_search <- paste0(prefix, title, suffix)
+      title_to_delete <- title
+      
+      paste0(
+        "Searching for (",
+        title_to_search,
+        "). Removing common title in parenthesis: (",
+        title_to_delete,
+        "). This excludes the specified prefix & suffix."
+      ) %>%
+        message_with_lines()
+      
+      dt <- dt[str_detect(string = col, pattern = title_to_search),
+               col := str_remove_all(string = col, pattern = title_to_delete)]
+      
+    }
+  }
+  
+  # constrained to start of string
+  if (startswith == TRUE) {
+    unique_suffixes <- unique(suffixes)
+    
+    for (i in 1:length(unique_suffixes)) {
+      suffix <- unique_suffixes[i]
+      
+      
+      for (title in common_titles) {
+        title_to_search_startswith <- paste0(title, suffix)
+        title_to_delete <- title
+        
+        paste0(
+          "Searching for string that starts with (",
+          title_to_search_startswith,
+          "). Removing common title in parenthesis: (",
+          title_to_delete,
+          "). This excludes the specified prefix & suffix."
+        ) %>%
+          message_with_lines()
+        
+        dt <-
+          dt[startsWith(x = col, prefix =  title_to_search_startswith),
+             col := str_remove_all(string = col, pattern = title_to_delete)]
+      }
+    }
+  }
+  
+  # constrained to end of string
+  if (endswith == TRUE) {
+    unique_prefixes <- unique(prefixes)
+    
+    for (i in 1:length(unique_prefixes)) {
+      prefix <- unique_prefixes[i]
+      
+      for (title in common_titles) {
+        title_to_search_endswith <- paste0(prefix, title)
+        title_to_delete <- title
+        
+        paste0(
+          "Searching for string that ends with (",
+          title_to_search_endswith,
+          "). Removing common title in parenthesis: (",
+          title_to_delete,
+          "). This excludes the specified prefix & suffix."
+        ) %>%
+          message_with_lines()
+        
+        
+        dt <- dt[endsWith(x = col, suffix = title_to_search_endswith),
+                 col := str_remove_all(string = col, pattern = title_to_delete)]
+      }
+    }
+  }
+  
+  # clean up internal order column 
+  internal_order_n <- names(dt) %>% 
+    .[startsWith(., "INTERNAL_ORDER_COLUMN")] %>% 
+    length()
+  
+  if(internal_order_n==2){
+    
+    internal_order_original <- names(dt) %>% 
+      .[startsWith(., "INTERNAL_ORDER_COLUMN_OLD")]
+    
+  }
+  
+  dt %>%
+    # remove excess commas (fruit of deletions)
+    .[str_detect(col, ", ,"), col := str_replace_all(col, pattern = ", ,", replacement = ",")] %>%
+    .[str_detect(col, ",,"), col := str_replace_all(col, pattern = ",,", replacement = ",")] %>%
+    # reorder
+    .[order(INTERNAL_ORDER_COLUMN)] %>%
+    .[, INTERNAL_ORDER_COLUMN := NULL] %>%
+    # rename 
+    rename_columns(current_names = c("col", internal_order_original),
+                   new_names = c(column, "INTERNAL_ORDER_COLUMN")) %>%
+    return()
+}
+
+
+str_remove_all_common_titles_dt2 <- function(datatable,
+                                            column,
+                                            prefixes = c(" ", ",", ",", " "),
+                                            suffixes = c(" ", ",", " ", ","),
+                                            startswith = T,
+                                            endswith = T,
+                                            specific = NULL) {
+  # datatable <- copy(contain_commas_char1)
+  # column <- "column2"
+  # prefixes <- c(" ", " ", ",")
+  # suffixes <- c(" ", ",", " ")
+  # endswith = T 
+  # startswith = T
+  
+  if (length(prefixes) != length(suffixes)) {
+    errorCondition(message = "Length of prefixes must match length of suffixes!")
+  }
+  
+  # set up
+  dt <- copy(datatable) %>%
+    rename_columns(current_names = c(column),
+                   new_names = c("col")) %>%
+    generate_internal_order_column(.)
+  
+  
+  # extract common titles
+  if (is.null(specific)) {
+    # load common titles
+    common_titles <- get_common_tites(type = "educ_period") %>%
+      append(., get_common_tites(type = "educ_unambiguous")) %>%
+      append(., get_common_tites(type = "military")) %>%
+      append(., get_common_tites(type = "oth")) %>%
+      append(., get_common_tites(type = "poli"))
+    
+  } else{
+    common_titles <- specific
+  }
+  
+  # order lengths to get the most complex first 
+  lengths_order <- common_titles %>% nchar() %>% order(.) %>% rev()
+  common_titles <- common_titles[lengths_order]
+  
+  # unconstrained
+  for (i in 1:length(prefixes)) {
+    
+    prefix <- prefixes[i]
+    suffix <- suffixes[i]
+    
+    for (title in common_titles) {
+      title_to_search <- paste0(prefix, title, suffix)
+      title_to_delete <- title
+      
+      paste0(
+        "Searching for (",
+        title_to_search,
+        "). Removing common title in parenthesis: (",
+        title_to_delete,
+        "). This excludes the specified prefix & suffix."
+      ) %>%
+        message_with_lines()
+      
+      dt <- dt[stri_detect_fixed(string = col, pattern = title_to_search),
+               col := stri_replace_all_fixed(string = col, pattern = title_to_delete, replacement="")]
+      
+    }
+  }
+  
+  # constrained to start of string
+  if (startswith == TRUE) {
+    unique_suffixes <- unique(suffixes)
+    
+    for (i in 1:length(unique_suffixes)) {
+      suffix <- unique_suffixes[i]
+      
+      
+      for (title in common_titles) {
+        title_to_search_startswith <- paste0(title, suffix)
+        title_to_delete <- title
+        
+        paste0(
+          "Searching for string that starts with (",
+          title_to_search_startswith,
+          "). Removing common title in parenthesis: (",
+          title_to_delete,
+          "). This excludes the specified prefix & suffix."
+        ) %>%
+          message_with_lines()
+        
+        dt <-
+          dt[startsWith(x = col, prefix =  title_to_search_startswith),
+             col := stri_replace_all_fixed(string = col, pattern = title_to_delete, replacement = "")]
+      }
+    }
+  }
+  
+  # constrained to end of string
+  if (endswith == TRUE) {
+    unique_prefixes <- unique(prefixes)
+    
+    for (i in 1:length(unique_prefixes)) {
+      prefix <- unique_prefixes[i]
+      
+      for (title in common_titles) {
+        title_to_search_endswith <- paste0(prefix, title)
+        title_to_delete <- title
+        
+        paste0(
+          "Searching for string that ends with (",
+          title_to_search_endswith,
+          "). Removing common title in parenthesis: (",
+          title_to_delete,
+          "). This excludes the specified prefix & suffix."
+        ) %>%
+          message_with_lines()
+        
+        
+        dt <- dt[endsWith(x = col, suffix = title_to_search_endswith),
+                 col := stri_replace_all_fixed(string = col, pattern = title_to_delete, replacement = "")]
+      }
+    }
+  }
+  
+  # clean up internal order column 
+  internal_order_n <- names(dt) %>% 
+    .[startsWith(., "INTERNAL_ORDER_COLUMN")] %>% 
+    length()
+  
+  if(internal_order_n==2){
+    
+    internal_order_original <- names(dt) %>% 
+      .[startsWith(., "INTERNAL_ORDER_COLUMN_OLD")]
+    
+  }
+  
+  dt %>%
+    # remove excess commas (fruit of deletions)
+    .[str_detect(col, ", ,"), col := stri_replace_all_fixed(col, pattern = ", ,", replacement = ",")] %>%
+    .[str_detect(col, ",,"), col := stri_replace_all_fixed(col, pattern = ",,", replacement = ",")] %>%
+    # reorder
+    .[order(INTERNAL_ORDER_COLUMN)] %>%
+    .[, INTERNAL_ORDER_COLUMN := NULL] %>%
+    # rename 
+    rename_columns(current_names = c("col", internal_order_original),
+                   new_names = c(column, "INTERNAL_ORDER_COLUMN")) %>%
+    return()
+}
+
+# Section 3.12.2: drop common titles from strings: helper functions -------
+str_remove_all_common_titles_startswith <- function(vector, prefix="", suffix="", specific=NULL){
+  
+  if(is.null(specific)){
+    # load common titles 
+    common_titles <- get_common_tites(type = "educ_period") %>% 
+      append(
+        ., get_common_tites(type = "educ_unambiguous")) %>% 
+      append(
+        ., get_common_tites(type = "military")) %>%
+      append(
+        ., get_common_tites(type = "oth")) %>% 
+      append(
+        ., get_common_tites(type = "poli"))
+  }else{
+    common_titles <- specific
+  }
+  
+  # prepare vector as datatable
+  vector_dt <- vector %>% data.table(vector=.) %>% 
+    .[, internal_order := 1:.N] 
+  
+  # for each title, remove it from the data 
+  for(title in common_titles){
+    
+    title <- paste0(prefix, title, suffix)
+    
+    vector_dt[startsWith(vector, title),  vector := str_remove_all(string = vector, pattern = title)]
+    
+  }
+  
+  vector_dt %>% 
+    .[order(internal_order)] %>% 
+    .[, vector] %>% 
+    return()
+  
+}
+
+# Section 3.12.3: drop common titles from strings: helper functions -------
+str_remove_all_common_titles_endswith <- function(vector, prefix="", suffix="", specific=NULL){
+  
+  if(is.null(specific)){
+    # load common titles 
+    common_titles <- get_common_tites(type = "educ_period") %>% 
+      append(
+        ., get_common_tites(type = "educ_unambiguous")) %>% 
+      append(
+        ., get_common_tites(type = "military")) %>%
+      append(
+        ., get_common_tites(type = "oth")) %>% 
+      append(
+        ., get_common_tites(type = "poli"))
+  }else{
+    common_titles <- specific
+  }
+  
+  # prepare vector as datatable
+  vector_dt <- vector %>% data.table(vector=.) %>% 
+    .[, internal_order := 1:.N] 
+  
+  # for each title, remove it from the data 
+  for(title in common_titles){
+    
+    title <- paste0(prefix, title, suffix)
+    
+    vector_dt[endsWith(x = vector, suffix = title),  vector := str_remove_all(string = vector, pattern = title)]
+    
+  }
+  
+  vector_dt %>% 
+    .[order(internal_order)] %>% 
+    .[, vector] %>% 
+    return()
+  
+}
+
+# Section 3.13:  check if a string contains non-letters  -----
+str_check_for_nonletters <- function(vector){ # used to be check_for_nonletters
+  
+  vector %>% 
+    str_replace_all(string = ., pattern = " ", replacement = "") %>% 
+    str_detect(., regex("\\W")) %>% 
+    return()
+  
+}
+
+# Section 3.14: generate a random string with letters & numbers -----------------
+str_generate_random_string <- function(size){ # used to be: generate_random_string  
+  samp<-c(0:9,letters,LETTERS)
+  paste(sample(samp,size = size),collapse="") %>% return()
+}
+
+# Section 3.15: generate a random string with letters & numbers that is not present in a vector -----------------
+str_generate_random_string_not_in_vector <- function(size, vector){
+  
+  # generate random string
+  random_string <- str_generate_random_string(size = size)
+  
+  # detect if it is in the vector
+  check <- str_detect(string = vector, pattern = random_string) %>% sum()
+  
+  # as size increases, it becomes exponentially more unlikely to appear 
+  if(check==1){
+    i <- 1
+    while (check==1) {
+      print(i)  
+      # generate random string
+      random_string <- str_generate_random_string(size = size)
+      
+      # detect if it is in the vector
+      check <- str_detect(string = vector, pattern = random_string) %>% sum()
+      i <- i+1
+    }
+  }
+  
+  return(random_string)
+  
+}  
+
+# Section 3.16: invert order of column if there is one comma in the text -------
+str_invert_order_given_one_comma <- function(datatable, column, suppress=F){
+  
+  # delete later
+  # datatable <- contain_commas_char1 %>% copy()
+  # column <- "column2"
+  
+  if(suppress){
+    message("(No issues necessarily, just a message!)
+Reminder: Only use this funciton (str_invert_order_given_one_comma) if you are sure there is at most one comma in each element of the specified column.")
+  } 
+  
+  datatable %>% copy() %>% 
+    # rename column for practicality
+    rename_columns(
+      datatable = .,
+      current_names = c(column),
+      new_names = c("column")) %>%
+    # split the column into two by the comma
+    .[, c("column__1", "column__2") := tstrsplit(x = column, ",", fixed=T)]  %>% 
+    .[is.na(column__1), column__1 := " " ]  %>% 
+    .[is.na(column__2), column__2 := " " ]  %>% 
+    # combine columns 
+    .[, column := paste(column__2, column__1)] %>% 
+    .[, `:=`(column__1 = NULL, column__2 = NULL)] %>% 
+    # rename column for practicality
+    rename_columns(
+      datatable = .,
+      current_names = c("column"),
+      new_names = c(column)) %>% 
+    return()
+  
+}
+
+
+# get_digits_after_last_underscore ----
+str_extract_digits_after_last_underscore <- function(x){ # get_digits_after_last_underscore
+  
+  # .*_(\d+)
+  
+  str_extract(string = x, pattern = "(\\d+)$") %>% 
+    as.numeric(.) %>% 
+    return(.)
+  
+}
+
+# str_replace for all double spaces ------
+str_remove_digits_odd_chars_and_double_spaces <- function(datatable, column){
+  
+  
+  odd_character <- c("€","%", "¥", "!", "@", "#")
+  digits <- c(0:9)
+  
+  remove_these <- odd_character %>% 
+    append(digits) 
+  
+  
+  keep_these <- names(datatable) %>% append(paste0(column, "2"))
+  
+  datatable <- datatable %>% copy() %>% 
+    rename_columns(
+      datatable = .,
+      current_names = c(column), 
+      new_names = c("column")
+    )  %>% .[, column2 := paste0(" ", column, " ")]
+  
+  
+  for(this in remove_these){
+    
+    paste0("Removing the following string: (", this,").") %>% print()
+    
+    nrows <- datatable %>% .[str_detect(column2, this)] %>% nrow()
+    
+    while(nrows>0){
+      datatable <- datatable %>% 
+        .[, column2 := str_remove_all(column2, pattern = this)] %>% 
+        .[, column2 := str_replace_all(column2, pattern = "  ", replacement = " ")] %>% 
+        .[, column2 := paste0(" ", column2, " ")]  
+      
+      nrows <- datatable %>% .[str_detect(column2, this)] %>% nrow()
+    }
+  }
+  
+  for(this in c("  ")){
+    
+    paste0("Removing the following string: (", this,").") %>% print()
+    
+    nrows <- datatable %>% .[str_detect(column2, this)] %>% nrow()
+    
+    while(nrows>0){
+      datatable <- datatable %>% 
+        
+        
+        .[, column2 := str_remove_all(column2, pattern = this)]
+      nrows <- datatable %>% .[str_detect(column2, this)] %>% nrow()
+    }
+  }
+  
+  
+  
+  
+  
+  datatable %>% copy() %>% 
+    rename_columns(
+      datatable = .,
+      current_names = c("column", "column2"), 
+      new_names = c(column, paste0(column, "2"))
+    ) %>% 
+    .[, ..keep_these] %>%  
+    return()
+  
+}
+
+# str_remove everything before a word appears -----
+str_remove_all_before_and_including_pattern <- function(x, pattern) {
+  # Extract the part of the string after the specified word
+  result <- str_extract(x, paste0(".*", pattern, "(.*)"))
+  
+  # If the word was not found, return an empty string
+  if (is.na(result)) {
+    return("")
+  } else {
+    return(result)
+  }
+}
+
+# str_remove_all_before_not_including_pattern ------
+
+str_remove_all_before_not_including_pattern <- function(x, pattern) {
+  # Extract the part of the string after the specified pattern
+  result <- stri_extract(x, paste0(pattern, "(.*)"), regex=T)
+  
+  # If the pattern was not found, return an empty string
+  if (is.na(result)) {
+    return("")
+  } else {
+    return(result)
+  }
+}
+
+# str_remove_all_after_not_including_pattern ------
+str_remove_all_after_not_including_pattern <- function(x, pattern) {
+  # Extract the part of the string before the specified pattern
+  result <- stri_extract(x, "^(.*?)" + pattern, regex=T)
+  
+  # If the pattern was not found, return the original string
+  if (is.na(result)) {
+    return(x)
+  } else {
+    return(result)
+  }
+}
+
+################################################################################
+# Section 4: environment and time  #############################################
+################################################################################
+
+# Section 4.1: print obj size ----
+print_obj_size <- function(message, x){
+  
+  pacman::p_load(pryr)
+  
+  # get obj size in GB
+  x <- x %>% object_size() %>%
+    format(., units = "GB") %>% 
+    as.numeric(.)
+  
+  # print it
+  (x / (1024**3)) %>%
+    paste(message, ., " GB") %>%
+    print()
+  
+}
+
+# Section 4.2: reduce RAM consumption ----
+remove_these <- function(remove_these){
+  
+  remove_these <- remove_these %>% append(c("remove_these"))
+  rm(list =remove_these ) 
+  gc()  
+  
+}
+
+
+# Section 4.3: get time stamp ----
+get_timestamp <- function(){
+  out <- Sys.time() %>% 
+    str_replace_all(., ":", "-") %>% 
+    str_replace_all(., " ", "_") %>%
+    substr(., 1, 20) %>%
+    paste0("_", ., "_")
+  return(out)
+}
+
+# Section 4.4: define sleep function to help prevent running the code accidentally -----
+x_second_sleep <- function(x, additional){
+  
+  Sys.time() %>% 
+    paste0("Current date/time in Chicago: ", .) %>% 
+    print()
+  
+  print(paste0("Going to sleep for ", x ," seconds. Additional message: ", additional))
+  
+  p1 <- proc.time()
+  Sys.sleep(x)
+  proc.time() - p1 # The cpu usage should be negligible
+  
+}
+
+# Section 4.5: get all files in directory and associated information ------
+
+
+list.file_info_dt <- function(wd){
+  
+  setwd(wd)
+  
+  files <- list.files()
+  
+  # get files 
+  files_dt <-  
+    data.table(files=files)
+  
+  # for each file, get last modificaiton time
+  for(file in files){
+    
+    files_dt[files==file, files_datetime := file.info(file)$ctime]  
+    files_dt[files==file, files_size := file.info(file)$size]  
+    
+  }
+  
+  # include wd
+  files_dt[, wd := wd]
+  files_dt[, files_date := substr(files_datetime, 1, 11)]
+  files_dt[, files_time := substr(files_datetime, 11, 19)]
+  
+  return(files_dt)
+  
+}
+
+
+################################################################################
+# Section 5: Internal operations ############################################### 
+################################################################################
+
+# generate an internal order column -------
+generate_internal_order_column <- function(datatable){
+  
+  # 1) check if 'INTERNAL_ORDER_COLUMN' exists in the data (it honestly shouldn't lol), change the column name to something random
+  # 1.1) If it does exist, just rename the variable in the data-set something that doesn't exist
+  if("INTERNAL_ORDER_COLUMN" %in% names(datatable)){
+    
+    # get column names   
+    original_names <- names(datatable)
+    
+    # generate a random suffix that doesn`t even exist in the orignal names 
+    random_suffix <- str_generate_random_string_not_in_vector(size = 4, vector = original_names)
+    
+    # new name of old internal order column name 
+    old_internal_order_column_new_name <- paste0("INTERNAL_ORDER_COLUMN", "_OLD_", random_suffix)
+    
+    datatable <- datatable  %>% copy() %>% 
+      rename_columns(datatable=., 
+                     current_names = c("INTERNAL_ORDER_COLUMN"), 
+                     new_names = c(old_internal_order_column_new_name))
+    
+  }
+  
+  # 2) 
+  
+  datatable  %>% copy() %>% .[, INTERNAL_ORDER_COLUMN := 1:.N] %>% return()
+  
+}
+
+# copy column  ----
+copy_column <- function(datatable, column_name, copy_column_name) {
+
+  #   delete later
+  # datatable <- surname_fyi %>% copy()
+  # column_name <- surname_is_local
+  
+  # this is what we define as local; therefore its perfectly colinear
+  datatable$column_name <-   datatable %>%
+    .[, ..column_name]
+  
+  # rename column
+  datatable <- datatable %>%
+    rename_columns(
+      datatable = .,
+      current_names = c("column_name"),
+      new_names = c(column_name)
+    )
+  
+  return(datatable)
+  
+}
+
+shuffle_datatable <-  function(datatable){
+  
+  datatable %>% 
+    .[, indexjklmadsfasfasdghfgrtw := .I] %>% 
+    .[sample(indexjklmadsfasfasdghfgrtw, .N, replace = F)] %>%
+    .[, indexjklmadsfasfasdghfgrtw := NULL] %>% 
+    return()
+}
+
+################################################################################
+# Section 6: print things  ###########################
+################################################################################
+
+# Section 6.1.1: simply print out a line ----
+print_line <- function(){
+  print("---------------------------------------------------")
+}
+
+# Section 6.1.2: print out a line, a message, then another line ----
+message_with_lines <- function(message_text){
+  message("---------------------------------------------------")
+  message(message_text)
+  message("---------------------------------------------------")
+  
+}
+
+# Section 6.2: return output in the style of a vector input: incredibly useful when working with R ----
+return_in_vector_format <- function(x){
+  
+  # if its a character vector
+  if(is.character(x)){
+    
+    out <- x %>% 
+      paste(., collapse = "', '") %>% 
+      paste0("'", . , "'") %>%
+      paste0("c(", . , ")")
+    
+  }
+  
+  # if its a numeric vector
+  if(is.numeric(x)){
+    
+    out <- x %>% 
+      paste(., collapse = ", ") %>% 
+      paste0("c(",. , ")")
+    
+  }
+  
+  return(out)
+  
+  
+}
+
+################################################################################
+# Section 7: SAVING ------
+################################################################################
+
+# save a datatable as a simple latex table without table environment ----
+save_simple_latex_table_fragment <- function(datatable, filename){
+  
+  datatable   %>%
+    xtable(., include.rownames=FALSE, row.names=F) %>% 
+    print(., type="latex")   %>% 
+    write(., file = filename)
+  
+  # quickly clean up tex file
+  read_lines(filename) %>% 
+    stri_replace_all_fixed(., pattern = "\\begin{table}", "%\\begin{table}") %>% 
+    stri_replace_all_fixed(., pattern = "\\end{table}", "%\\end{table}") %>% 
+    stri_replace_all_fixed(., pattern = "\\centering", "%\\centering") %>% 
+    
+    # drop row names (which are numbers)
+    stri_replace_first_regex(., pattern = "^(\\s*?\\d)", "") %>%  
+    # drop first column (which are numbers)
+    stri_replace_first_regex(., pattern = "^(\\s*?&)", "") %>% 
+    # reduce number of columns in tabular heading
+    stri_replace_first_fixed(., pattern = "begin{tabular}{r", "begin{tabular}{") %>%   
+    write_lines(., path   = filename)
+  
+  paste0("Latex table saved under: ", filename) %>%  message_with_lines()
+  
+}

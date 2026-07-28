@@ -1,7 +1,13 @@
 # CAR magic files: discovery, chain map, and migration plan
 
 Date: 2026-07-06
-Status: discovery write-up + high-level migration plan (no code migrated yet)
+Status: SUPERSEDED for current state -- the migration is code-complete (2026-07-15).
+See `docs/notes/car_migration_issues.md` for the migrated chain
+(`code/01_build/01_car/00..05`), all bugs/deviations found, and the first-run
+runbook. This note remains the discovery/provenance write-up; two corrections made
+during migration: the CAR cleaning lives in A_prepare section 3 (not "Section C"),
+and the `data/processing/archive/CAROverlap_v1..v4` inputs to C's consolidation were
+a second magic-file problem (resolved: reproducible core only, no v1-v4).
 
 ## TL;DR
 

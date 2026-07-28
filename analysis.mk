@@ -4,7 +4,9 @@ SHELL := /bin/bash
 R_SCRIPT ?= Rscript
 
 VTN_DIR := code/01_build/02_vtn
-CAR_SCRIPT := code/01_build/01_car/0_build_car_layers_from_raw.R
+CAR_SRC := code/01_build/01_car
+CAR_SCRIPT := $(CAR_SRC)/0_build_car_layers_from_raw.R
+CAR_HELPERS := $(CAR_SRC)/_helpers_car_util.R $(CAR_SRC)/_helpers_car_cleaning.R
 
 STAMP_DIR := build/stamps
 
@@ -27,6 +29,14 @@ VTN_CAR_MATCH_SCRIPT := $(VTN_DIR)/6_match_car_IHSregion.R
 VTN_CAR_REGION_SCRIPT := $(VTN_DIR)/7_vtn_car_IHSregion_merge.R
 VTN_CAR_PARCEL_SCRIPT := $(VTN_DIR)/8_vtn_car_merge.R
 
+CAR00_STAMP := $(STAMP_DIR)/car00_registration_years.stamp
+CAR01_STAMP := $(STAMP_DIR)/car01_clean_shapes.stamp
+CAR02_STAMP := $(STAMP_DIR)/car02_union_sensitive.stamp
+CAR03_STAMP := $(STAMP_DIR)/car03_intersect_cars.stamp
+CAR03B_STAMP := $(STAMP_DIR)/car03b_consolidate_overlaps.stamp
+CAR04_STAMP := $(STAMP_DIR)/car04_muni_year.stamp
+CAR05_STAMP := $(STAMP_DIR)/car05_combine_biome.stamp
+
 VTN_PRECLEAN_STAMP := $(STAMP_DIR)/vtn_preclean.stamp
 VTN_CLEAN_STAMP := $(STAMP_DIR)/vtn_clean.stamp
 VTN_CORR_STAMP := $(STAMP_DIR)/vtn_corrections.stamp
@@ -46,7 +56,7 @@ help:
 	@echo "  make -f analysis.mk all         # current stable pipeline (VTN 0-5)"
 	@echo "  make -f analysis.mk 01_build    # build subtree aliases"
 	@echo "  make -f analysis.mk 02_analysis # analysis subtree alias"
-	@echo "  make -f analysis.mk 01_car      # run CAR scaffold"
+	@echo "  make -f analysis.mk 01_car      # run full CAR chain (00-05) + scaffold"
 	@echo "  make -f analysis.mk 02_vtn      # run VTN 0-5"
 	@echo "  make -f analysis.mk 02_vtn_car  # run VTN steps 6-8 (CAR-dependent)"
 	@echo "  make -f analysis.mk 03_lavoura  # run lavoura subtree (stub)"
@@ -76,8 +86,38 @@ vtn: $(MUNI_CLEAN) $(VTN_PRECLEAN_OUT) $(VTN_CLEAN_OUT) $(VTN_CORR_STAMP) $(VTN_
 
 vtn_car: $(VTN_CAR_IHS_STAMP) $(VTN_CAR_REGION_STAMP) $(VTN_CAR_PARCEL_STAMP)
 
-car:
+# CAR chain: 00 registration years -> 01 robust cleaning -> {02 union overlaps,
+# 03/03b pairwise conflicts, 05 biome combine} -> 04 muni-year panel -> scaffold.
+car: $(CAR04_STAMP) $(CAR05_STAMP)
 	$(R_SCRIPT) "$(CAR_SCRIPT)"
+
+$(CAR00_STAMP): $(CAR_SRC)/00_car_registration_years.R $(CAR_HELPERS) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/00_car_registration_years.R"
+	@date > "$@"
+
+$(CAR01_STAMP): $(CAR_SRC)/01_clean_car_shapes.R $(CAR_HELPERS) $(CAR00_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/01_clean_car_shapes.R"
+	@date > "$@"
+
+$(CAR02_STAMP): $(CAR_SRC)/02_car_union_sensitive_land.R $(CAR_HELPERS) $(CAR00_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/02_car_union_sensitive_land.R"
+	@date > "$@"
+
+$(CAR03_STAMP): $(CAR_SRC)/03_intersect_individual_cars.R $(CAR_HELPERS) $(CAR00_STAMP) $(CAR01_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/03_intersect_individual_cars.R"
+	@date > "$@"
+
+$(CAR03B_STAMP): $(CAR_SRC)/03b_consolidate_car_overlaps.R $(CAR_HELPERS) $(CAR03_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/03b_consolidate_car_overlaps.R"
+	@date > "$@"
+
+$(CAR04_STAMP): $(CAR_SRC)/04_consolidate_muni_year.R $(CAR_HELPERS) $(CAR02_STAMP) $(CAR03B_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/04_consolidate_muni_year.R"
+	@date > "$@"
+
+$(CAR05_STAMP): $(CAR_SRC)/05_combine_car_biome.R $(CAR_HELPERS) $(CAR01_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/05_combine_car_biome.R"
+	@date > "$@"
 
 lavoura:
 	@echo "No lavoura DAG wired yet under code/01_build/03_lavoura."
