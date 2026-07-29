@@ -29,6 +29,12 @@ VTN_CAR_MATCH_SCRIPT := $(VTN_DIR)/6_match_car_IHSregion.R
 VTN_CAR_REGION_SCRIPT := $(VTN_DIR)/7_vtn_car_IHSregion_merge.R
 VTN_CAR_PARCEL_SCRIPT := $(VTN_DIR)/8_vtn_car_merge.R
 
+# Lavoura chain: FNP land prices x IHS regions -> attached to CAR parcels.
+LAV_DIR := code/01_build/03_lavoura
+LAV_WORKBOOK := data/input/landvalues/vnp/Lavoura_FNP.xlsx
+LAV01_STAMP := $(STAMP_DIR)/lavoura01_regions.stamp
+LAV02_STAMP := $(STAMP_DIR)/lavoura02_parcels.stamp
+
 CAR00_STAMP := $(STAMP_DIR)/car00_registration_years.stamp
 CAR01_STAMP := $(STAMP_DIR)/car01_clean_shapes.stamp
 CAR02_STAMP := $(STAMP_DIR)/car02_union_sensitive.stamp
@@ -67,7 +73,7 @@ help:
 	@echo "  make -f analysis.mk 01_car      # run full CAR chain (00-05) + scaffold"
 	@echo "  make -f analysis.mk 02_vtn      # run VTN 0-5"
 	@echo "  make -f analysis.mk 02_vtn_car  # run VTN steps 6-8 (CAR-dependent)"
-	@echo "  make -f analysis.mk 03_lavoura  # run lavoura subtree (stub)"
+	@echo "  make -f analysis.mk 03_lavoura  # run lavoura steps 1-2 (needs VTN 6)"
 	@echo "  make -f analysis.mk 04_mapbiomas # run MapBiomas backbone 0-3 (FULL: all years/tiles, hours)"
 	@echo "  make -f analysis.mk full        # run build + analysis aliases"
 	@echo "  make -f analysis.mk clean-stamps"
@@ -130,8 +136,18 @@ $(CAR05_STAMP): $(CAR_SRC)/05_combine_car_biome.R $(CAR_HELPERS) $(CAR01_STAMP) 
 	$(R_SCRIPT) "$(CAR_SRC)/05_combine_car_biome.R"
 	@date > "$@"
 
-lavoura:
-	@echo "No lavoura DAG wired yet under code/01_build/03_lavoura."
+# Lavoura chain: 1 FNP prices x CAR regions -> 2 prices attached to parcels.
+# Step 3 (NB + Lavoura comparison) is blocked on the unmigrated NB/VNP track;
+# see docs/notes/lavoura_migration_issues.md issue #L10.
+lavoura: $(LAV02_STAMP)
+
+$(LAV01_STAMP): $(LAV_DIR)/1_match_lavoura_regions.R $(LAV_WORKBOOK) $(VTN_CAR_IHS_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(LAV_DIR)/1_match_lavoura_regions.R"
+	@date > "$@"
+
+$(LAV02_STAMP): $(LAV_DIR)/2_match_lavoura_parcels.R $(LAV01_STAMP) $(VTN_CAR_IHS_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(LAV_DIR)/2_match_lavoura_parcels.R"
+	@date > "$@"
 
 # Full-scale run of the MapBiomas backbone (all years/tiles). Long-running.
 # Scope can be narrowed for a smoke test via the MB_* env vars the scripts read.

@@ -26,7 +26,7 @@ car_layers <- list(
   legal = here("data", "intermediate", "car", "already_treated.shp")
 )
 
-missing <- car_layers[!file.exists(car_layers)]
+missing <- car_layers[!file.exists(unlist(car_layers))]
 if (length(missing) > 0) {
   stop(
     paste(

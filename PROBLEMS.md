@@ -1,14 +1,24 @@
 # Problems and Open Items in the Migration
 
-Date: 2026-05-05
+Date: 2026-05-05 (status header updated 2026-07-29)
 
 This file records known problems, deferred work, and reproducibility hazards in the new (clean) repo. It is the migration counterpart to `legacy_repo/PROBLEMS.md`, which catalogs problems in the legacy code itself.
 
 The migration principle: **only migrate scripts whose upstream has been run successfully end-to-end in this repo.** Items marked "blocked" in this file are blocked under that rule.
 
+## STATUS UPDATE (2026-07-29)
+
+Sections 1 and 4 below are **substantially out of date**; they are kept for the historical record. What changed:
+
+- **§1 is RESOLVED.** The CAR magic-file chain was recovered and migrated in full, and validated against the published snapshot to research grade. `car_combined_amazonBiome2.shp` is now a regenerable artifact produced by `code/01_build/01_car/05_combine_car_biome.R`. Full record: `docs/notes/car_migration_issues.md` (26 issues) and `docs/notes/car_magic_files_recovery.md`.
+- **MapBiomas backbone** (steps 0–4) is migrated and run; `transitions_combined` rasters exist on disk. See `docs/notes/mapbiomas_migration_map.md`.
+- **§4 partially resolved.** VTN step 6 now runs (a latent crash was fixed — see `docs/notes/lavoura_migration_issues.md` issue #L9), and **Lavoura steps 1–2 are migrated and run**, wired as `make -f analysis.mk lavoura`. See `docs/notes/lavoura_migration_issues.md`.
+
+Still genuinely open: §2 (non-idempotent VTN correction step), §3 (manual fix-sheets, working as designed), VTN steps 7–8 (need the VTN *price* tables, not yet on disk), the NB/VNP track, Lavoura step 3, and the `2_empirics` / `3_policy1` Pedro track.
+
 ---
 
-## 1) Magic-file dependency in the CAR builder (BLOCKING)
+## 1) Magic-file dependency in the CAR builder (RESOLVED 2026-07-24 — see status update above)
 
 **Affected file:** `code/01_build/01_car/0_build_car_layers_from_raw.R`
 
@@ -121,15 +131,17 @@ These are intentional, curated inputs. Listed here so the migration record is ex
 
 The following legacy pipelines are not yet in the new repo. All are blocked by the CAR module being non-runnable (§1) and the gradual-migration rule.
 
-- **Lavoura** (`legacy_repo/code/patricio_preach_tomas_work/code/Tomas_Lavoura_processing_NB_merge/{1,2,3}.match_lavoura_data.R`) — depends on CAR layers. Target home: `code/01_build/03_lavoura/` (folder exists, empty).
-- **NB / VNP** (`legacy_repo/code/patricio_preach_tomas_work/code/Tomas_NB_processing/{1.0..6.0}_tomas_task5.R`) — partially CAR-dependent. Target home: `code/01_build/04_vnp/` (not yet created).
+- ~~**Lavoura**~~ — **steps 1–2 MIGRATED AND RUN (2026-07-29)**, living in `code/01_build/03_lavoura/` and wired as `make -f analysis.mk lavoura`. Step 3 remains blocked on the NB/VNP track. See `docs/notes/lavoura_migration_issues.md`.
+- **NB / VNP** (`legacy_repo/code/patricio_preach_tomas_work/code/Tomas_NB_processing/{1.0..6.0}_tomas_task5.R`) — partially CAR-dependent. Target home: `code/01_build/04_vnp/` (not yet created). No longer blocked by §1; its raw workbooks (`vnp_2002_2017.xlsx`, `Land Price_North Brazil_FNP.xlsx`) are now vendored under `data/input/landvalues/vnp/`. This is the next natural piece of work — it unblocks Lavoura step 3.
 - **Pedro empirics track:**
   - `legacy_repo/code/0_deforestation_rules.cpp` (Rcpp helper)
   - `legacy_repo/code/1_mapbiomas.R` (deforestation pixel logic, ~77 KB)
   - `legacy_repo/code/2_empirics.R` (master script, ~238 KB; also the magic-file producer per §1)
   - `legacy_repo/code/3_policy1.R` (policy regressions, ~34 KB)
   - `legacy_repo/code/x_aggregate_infractions.R` (IBAMA infractions ingest)
-- **VTN steps 6–8 in this repo** are migrated but unrun (they depend on §1 CAR outputs). Stamps for 1–4 exist in `build/stamps/`; outputs for 0 and 5 exist on disk; stamps for 6, 7, 8 are absent and `data/intermediate/car/` is empty.
+- **VTN steps 6–8 in this repo** — step 6 now RUNS (2026-07-29) and produces `data/intermediate/car/ihs_breakdown/` plus `all_car_regions.Rdata`; a latent crash in it was fixed (issue #L9). Steps 7–8 remain unrun: they need `VTN_REGION_OUT`, which requires the VTN **price** tables (`vtn_YYYY.rds`), still absent from `data/input/landvalues/vtn/`.
+
+  **Warning about `build/stamps/`:** the four `vtn_*.stamp` files are **committed to git and dated 2026-05-05**. They are from the original snapshot commit, not evidence of any local run — `data/clean/` was empty until 2026-07-29. Do not read stamp presence as proof a step has run here; check for the actual output files.
 
 ---
 
