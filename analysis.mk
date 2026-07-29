@@ -45,6 +45,13 @@ VNP_HELPERS := $(VNP_DIR)/_helpers_vnp.R
 VNP01_STAMP := $(STAMP_DIR)/vnp01_panel_2016on.stamp
 VNP02_STAMP := $(STAMP_DIR)/vnp02_panel_pre2015.stamp
 
+# Empirics chain: per-parcel deforestation from the MapBiomas transition rasters,
+# then the paper's eligible / ineligible / never-eligible split.
+EMP_DIR := code/01_build/06_empirics
+EMP_YEARS := 2004 2008 2014
+EMP_DEFO_OUT := $(addprefix data/intermediate/empirics/parcel_defo_,$(addsuffix .csv,$(EMP_YEARS)))
+EMP_SPLIT_STAMP := $(STAMP_DIR)/emp02_eligibility_split.stamp
+
 CAR00_STAMP := $(STAMP_DIR)/car00_registration_years.stamp
 CAR01_STAMP := $(STAMP_DIR)/car01_clean_shapes.stamp
 CAR02_STAMP := $(STAMP_DIR)/car02_union_sensitive.stamp
@@ -72,8 +79,8 @@ MB_STATS_STAMP := $(STAMP_DIR)/mapbiomas_stats.stamp
 .PHONY: help all \
 	build analysis \
 	01_build 02_analysis \
-	01_car 02_vtn 02_vtn_car 03_lavoura 04_mapbiomas 05_vnp \
-	vtn vtn_car car lavoura mapbiomas vnp full clean-stamps
+	01_car 02_vtn 02_vtn_car 03_lavoura 04_mapbiomas 05_vnp 06_empirics \
+	vtn vtn_car car lavoura mapbiomas vnp empirics full clean-stamps
 
 help:
 	@echo "Targets:"
@@ -86,6 +93,7 @@ help:
 	@echo "  make -f analysis.mk 03_lavoura  # run lavoura steps 1-3 (needs VTN 6 + vnp)"
 	@echo "  make -f analysis.mk 04_mapbiomas # run MapBiomas backbone 0-3 (FULL: all years/tiles, hours)"
 	@echo "  make -f analysis.mk 05_vnp      # run NB/VNP price panels (both FNP sheets)"
+	@echo "  make -f analysis.mk 06_empirics # parcel deforestation + eligibility split (SLOW: ~1h)"
 	@echo "  make -f analysis.mk full        # run build + analysis aliases"
 	@echo "  make -f analysis.mk clean-stamps"
 
@@ -95,7 +103,7 @@ build: 01_build
 
 analysis: 02_analysis
 
-01_build: 01_car 02_vtn 02_vtn_car 03_lavoura 04_mapbiomas 05_vnp
+01_build: 01_car 02_vtn 02_vtn_car 03_lavoura 04_mapbiomas 05_vnp 06_empirics
 
 02_analysis:
 	@echo "No analysis DAG wired yet under code/02_analysis."
@@ -111,6 +119,8 @@ analysis: 02_analysis
 04_mapbiomas: mapbiomas
 
 05_vnp: vnp
+
+06_empirics: empirics
 
 vtn: $(MUNI_CLEAN) $(VTN_PRECLEAN_OUT) $(VTN_CLEAN_OUT) $(VTN_CORR_STAMP) $(VTN_REGION_OUT) $(IHS_REGIONS)
 
@@ -178,6 +188,17 @@ $(VNP01_STAMP): $(VNP_DIR)/1_city_region_panel_2016on.R $(VNP_HELPERS) | $(STAMP
 
 $(VNP02_STAMP): $(VNP_DIR)/2_city_region_panel_pre2015.R $(VNP_HELPERS) | $(STAMP_DIR)
 	$(R_SCRIPT) "$(VNP_DIR)/2_city_region_panel_pre2015.R"
+	@date > "$@"
+
+# Empirics: one deforestation panel per year (resumable per raster tile), then
+# the eligibility split + Table 1 comparison.
+empirics: $(EMP_SPLIT_STAMP)
+
+data/intermediate/empirics/parcel_defo_%.csv: $(EMP_DIR)/1_parcel_deforestation.R
+	EMP_YEAR=$* $(R_SCRIPT) "$(EMP_DIR)/1_parcel_deforestation.R"
+
+$(EMP_SPLIT_STAMP): $(EMP_DIR)/2_eligibility_split.R $(EMP_DEFO_OUT) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(EMP_DIR)/2_eligibility_split.R"
 	@date > "$@"
 
 full: 01_build 02_analysis
