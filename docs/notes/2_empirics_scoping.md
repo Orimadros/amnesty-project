@@ -6,6 +6,18 @@ Status: scoping only. No code migrated yet.
 Purpose: turn `legacy_repo/code/2_empirics.R` (3,571 lines) into a numbered stage list
 with dependencies, so scope can be cut with information rather than guessed at.
 
+> **PARTLY SUPERSEDED — read `docs/notes/paper_vs_pipeline.md` first.**
+> After reading the paper (`amnesty_wp.pdf`), two things below are wrong:
+> 1. **"Second finding" is misdiagnosed.** It guesses `spillover` is the mis-wired loop.
+>    It is **`control`**. `spillover` IS the paper's ineligible group, so its
+>    `CAR_notEligible_defo_` read is correct; `control` should read
+>    `CAR_inReservas_defo_`.
+> 2. **The stage-4 "already migrated" note is too optimistic.** Our
+>    `car_eligible_cleaned.shp` is the paper's eligible + ineligible *combined*; the
+>    eligible/ineligible split still has to be built, and its occupied-by-2004 condition
+>    needs the deforestation rasters. Stage 5 is on the critical path.
+> The stage map, the magic-file finding, and the estimates remain valid.
+
 ## HEADLINE FINDING — the DiD tail is disconnected from the pipeline above it
 
 This is the thing to resolve before any code is written.
