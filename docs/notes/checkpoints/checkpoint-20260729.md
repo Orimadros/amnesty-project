@@ -6,13 +6,33 @@ Handoff so a new chat can continue. Point the new session here:
 ## TL;DR — where we are RIGHT NOW (2026-07-29)
 
 - **Everything is on `integration/car-mapbiomas`**, checked out in the MAIN checkout.
-  It merges the CAR migration and the MapBiomas backbone. Tip: `c21b0da`.
-- **Lavoura steps 1-2 are migrated and RUN.** `make -f analysis.mk lavoura` works and
-  is idempotent.
+  It merges the CAR migration and the MapBiomas backbone. Tip: `bb9d5a7`.
+- **The whole price chain now runs end to end**, all idempotent:
+  `make -f analysis.mk vnp` then `make -f analysis.mk lavoura`.
 - **VTN 0 -> 5 -> 6 now run** for the first time. Step 6 had a latent crash; fixed.
 - **Nothing is pushed.** `main` is protected (see below).
-- **Next piece of work: the NB/VNP track** (6 scripts, raw inputs already vendored).
-  It unblocks Lavoura step 3.
+- **Next piece of work: `2_empirics`.** Its price inputs are now satisfied — Lavoura
+  step 3 produces `<cat>_parcel_nb_lavoura_wide.rds`, which `2_empirics.R:2313` reads,
+  and the MapBiomas rasters it needs are on disk.
+
+### Added later the same day (2026-07-29)
+
+- **NB/VNP track migrated** (`code/01_build/05_vnp/`, `make -f analysis.mk vnp`):
+  legacy `Tomas_NB_processing/1.0` and `2.0`. Legacy `3.0`-`6.0` are diagnostics that
+  nothing reads and that Lavoura step 3 subsumes — deliberately not migrated
+  (`docs/notes/vnp_migration_issues.md` issue #V7).
+- **Lavoura step 3 migrated** (`3_join_nb_lavoura_parcels.R`). The Lavoura chain is now
+  complete: 1 -> 2 -> 3.
+- **Two findings worth knowing before using these prices:**
+  - *NB has an era break* (#V4). The pre-2015 and 2016+ sheets use different land-type
+    conventions (106 free-text types vs 11 normalised ones), so a series crossing
+    2015/2016 has a composition break. Rio Branco goes from `mata` ~125 R$/ha to
+    `pastagem formada` ~6,000 R$/ha.
+  - *NB sits systematically below Lavoura* (#L13), -656 R$/ha in 2002 widening to
+    -5,489 in 2017. That is composition, not a bug: Lavoura is cropland only, NB
+    averages all land types including forest. Do NOT treat them as interchangeable.
+- **Coverage payoff** (#L14): Lavoura alone leaves 43,695 of 165,940 eligible parcels
+  unpriced in 2017; NB + Lavoura together leave only 2,459 (1.5%) with no price at all.
 
 ## Branch layout — read this before touching git
 
@@ -119,21 +139,28 @@ re-serialise the whole parcel table 16x and that **nothing downstream reads**. R
 with one wide panel per category (`price_YYYY_lavoura` columns, matching what step 3
 builds) plus a coverage summary — ~140 MB instead of several GB.
 
-## Next session: the NB/VNP track
+## Next session: `2_empirics`
 
-Source: `legacy_repo/code/patricio_preach_tomas_work/code/Tomas_NB_processing/{1.0..6.0}_tomas_task5.R`
-Target home: `code/01_build/04_vnp/` (not yet created — note `04_mapbiomas` already
-exists, so pick a non-colliding number or name).
+DONE this session (see the "Added later" block above): the NB/VNP track and Lavoura
+step 3. `2_empirics` is now the next piece, and both classes of input it needs exist:
 
-Why it's next: raw workbooks are already vendored (above), it is no longer blocked by
-the CAR module, and finishing it unblocks **Lavoura step 3**
-(`3.match_lavoura_data.R`), which needs
-`data/clean/vnp/city_region_yearly_pt{,_pre2015}.rds`. Lavoura step 3's Lavoura half is
-already satisfied by step 2's wide panel.
+- price side: `data/intermediate/lavoura/parcels_nb_lavoura/<cat>_parcels_all/<cat>_parcel_nb_lavoura_wide.rds`
+  (read at `legacy_repo/code/2_empirics.R:2313`)
+- deforestation side: `data/intermediate/mapbiomas/transitions_combined/` (75 GB, present)
+- CAR side: the scaffold layers + `car_combined_amazonBiome2.shp`
 
-After that: `2_empirics` — rasters are present, but it is 3,571 lines mixing pipeline
-code with exploratory blocks and should be decomposed into numbered stages like the CAR
-chain, not ported as one script.
+Approach: **decompose into numbered stages like the CAR chain — do NOT port it as one
+script.** It is 3,571 lines mixing pipeline code with exploratory blocks, hardcoded
+personal paths, and dead objects. Its already-migrated pieces (the biome combine at
+lines 255-307 -> CAR stage 05; the eligible/ineligible/already_treated classification ->
+the CAR scaffold) should be skipped, not re-ported. Expect roughly: deforestation
+scoring per CAR, the spatial conflict-resolution algorithm, control-area construction,
+then the regressions.
+
+Note the legacy 2_empirics reads the wide RDS and immediately derives per-year means via
+`rowMeans` over `preco_*_<year>` columns. The compact
+`<cat>_parcel_price_panel.csv` written by Lavoura step 3 already is that derivation, so
+new stages should prefer it over re-deriving from the 1,700-column wide table.
 
 ## Still open / not done
 
