@@ -35,6 +35,15 @@ LAV_WORKBOOK := data/input/landvalues/vnp/Lavoura_FNP.xlsx
 LAV01_STAMP := $(STAMP_DIR)/lavoura01_regions.stamp
 LAV02_STAMP := $(STAMP_DIR)/lavoura02_parcels.stamp
 
+# NB/VNP chain: FNP North-Brazil land prices -> wide (state x region) x year panels.
+# NOTE: the source workbook is "data/input/landvalues/vnp/Land Price_North Brazil_FNP.xlsx".
+# Its name contains spaces, which make would split into separate prerequisites, so it is
+# deliberately NOT listed as one; _helpers_vnp.R checks for it and errors clearly.
+VNP_DIR := code/01_build/05_vnp
+VNP_HELPERS := $(VNP_DIR)/_helpers_vnp.R
+VNP01_STAMP := $(STAMP_DIR)/vnp01_panel_2016on.stamp
+VNP02_STAMP := $(STAMP_DIR)/vnp02_panel_pre2015.stamp
+
 CAR00_STAMP := $(STAMP_DIR)/car00_registration_years.stamp
 CAR01_STAMP := $(STAMP_DIR)/car01_clean_shapes.stamp
 CAR02_STAMP := $(STAMP_DIR)/car02_union_sensitive.stamp
@@ -62,8 +71,8 @@ MB_STATS_STAMP := $(STAMP_DIR)/mapbiomas_stats.stamp
 .PHONY: help all \
 	build analysis \
 	01_build 02_analysis \
-	01_car 02_vtn 02_vtn_car 03_lavoura 04_mapbiomas \
-	vtn vtn_car car lavoura mapbiomas full clean-stamps
+	01_car 02_vtn 02_vtn_car 03_lavoura 04_mapbiomas 05_vnp \
+	vtn vtn_car car lavoura mapbiomas vnp full clean-stamps
 
 help:
 	@echo "Targets:"
@@ -75,6 +84,7 @@ help:
 	@echo "  make -f analysis.mk 02_vtn_car  # run VTN steps 6-8 (CAR-dependent)"
 	@echo "  make -f analysis.mk 03_lavoura  # run lavoura steps 1-2 (needs VTN 6)"
 	@echo "  make -f analysis.mk 04_mapbiomas # run MapBiomas backbone 0-3 (FULL: all years/tiles, hours)"
+	@echo "  make -f analysis.mk 05_vnp      # run NB/VNP price panels (both FNP sheets)"
 	@echo "  make -f analysis.mk full        # run build + analysis aliases"
 	@echo "  make -f analysis.mk clean-stamps"
 
@@ -84,7 +94,7 @@ build: 01_build
 
 analysis: 02_analysis
 
-01_build: 01_car 02_vtn 02_vtn_car 03_lavoura 04_mapbiomas
+01_build: 01_car 02_vtn 02_vtn_car 03_lavoura 04_mapbiomas 05_vnp
 
 02_analysis:
 	@echo "No analysis DAG wired yet under code/02_analysis."
@@ -98,6 +108,8 @@ analysis: 02_analysis
 03_lavoura: lavoura
 
 04_mapbiomas: mapbiomas
+
+05_vnp: vnp
 
 vtn: $(MUNI_CLEAN) $(VTN_PRECLEAN_OUT) $(VTN_CLEAN_OUT) $(VTN_CORR_STAMP) $(VTN_REGION_OUT) $(IHS_REGIONS)
 
@@ -152,6 +164,17 @@ $(LAV02_STAMP): $(LAV_DIR)/2_match_lavoura_parcels.R $(LAV01_STAMP) $(VTN_CAR_IH
 # Full-scale run of the MapBiomas backbone (all years/tiles). Long-running.
 # Scope can be narrowed for a smoke test via the MB_* env vars the scripts read.
 mapbiomas: $(MB_STATS_STAMP)
+
+# NB/VNP chain: one wide price panel per FNP sheet era. The two are independent.
+vnp: $(VNP01_STAMP) $(VNP02_STAMP)
+
+$(VNP01_STAMP): $(VNP_DIR)/1_city_region_panel_2016on.R $(VNP_HELPERS) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(VNP_DIR)/1_city_region_panel_2016on.R"
+	@date > "$@"
+
+$(VNP02_STAMP): $(VNP_DIR)/2_city_region_panel_pre2015.R $(VNP_HELPERS) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(VNP_DIR)/2_city_region_panel_pre2015.R"
+	@date > "$@"
 
 full: 01_build 02_analysis
 
