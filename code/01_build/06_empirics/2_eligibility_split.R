@@ -10,9 +10,18 @@
 # and ineligible = in a target area but failing either condition. The control
 # group ("never-eligible") is squatters in reservations / conservation units.
 #
-# Operationalised exactly as the legacy code does:
-#   "occupied by year Y"  ->  deforestation_rate(Y) > 10        (2_empirics.R:636, 1209, 1290)
-#   "<= 1500 ha"          ->  deforested_area <= 1500 AND area <= 1500   (2_empirics.R:1228, 1310)
+# Operationalised per the paper's appendices (see docs/notes/paper_appendix_specs.md):
+#   "occupation began in year t"  ->  FIRST year the deforested share of the parcel's
+#                                    legacy forest reaches 10%      (paper 2.3, Appendix C)
+#   "ever occupied" sample        ->  deforested share >= 10% in 2014 (Appendix C step 1)
+#   "<= 1500 ha"                  ->  deforested area <= 1500 AND area <= 1500
+#                                                            (2_empirics.R:1228, 1310)
+#
+# NOTE: an earlier version of this script used a LEVEL test (rate_2004 > 10) instead of
+# the first-crossing test. Those differ under reforestation -- a parcel that reached 15%
+# by 1998 and regrew to 8% by 2004 is occupied-since-1998 to the paper but unoccupied to a
+# 2004 level test. That misrouted small parcels into ineligible; see issue #E1 in
+# docs/notes/paper_appendix_specs.md.
 #
 # NOTE on group names: our CAR scaffold's car_eligible_cleaned.shp is the paper's
 # eligible+ineligible COMBINED (it applies no year/area test), and its
@@ -26,37 +35,54 @@ OCCUPIED_RATE <- 10 # percent; legacy threshold for "in use"
 AREA_CAP <- 1500 # hectares
 
 emp_dir <- here("data", "intermediate", "empirics")
-years <- c(2004, 2008, 2014)
 
-files <- file.path(emp_dir, paste0("parcel_defo_", years, ".csv"))
-absent <- files[!file.exists(files)]
-if (length(absent) > 0) {
-  stop("Missing deforestation panel(s):\n", paste0(" - ", absent, collapse = "\n"),
-       "\nRun 1_parcel_deforestation.R for each year first.")
+# Every year present on disk. The occupation test needs the full run up to 2004 to
+# find the first crossing; 2008/2014 supply the outcomes.
+all_files <- list.files(emp_dir, pattern = "^parcel_defo_[0-9]{4}\\.csv$", full.names = TRUE)
+have <- sort(as.integer(gsub("\\D", "", basename(all_files))))
+needed_outcome <- c(2008, 2014)
+if (!all(needed_outcome %in% have)) {
+  stop("Missing outcome year(s): ",
+       paste(setdiff(needed_outcome, have), collapse = ", "))
 }
+occ_years <- have[have <= 2004]
+if (length(occ_years) < 2) {
+  stop("Only ", length(occ_years), " year(s) <= 2004 on disk (",
+       paste(occ_years, collapse = ", "), ").\n",
+       "The first-crossing occupation test needs the run from 1987; ",
+       "see docs/notes/paper_appendix_specs.md issue #E1.")
+}
+message("occupation years available: ", min(occ_years), "-", max(occ_years),
+        " (", length(occ_years), " years)")
 
-d <- rbindlist(lapply(files, fread))
+d <- rbindlist(lapply(all_files, fread))
 message("loaded ", nrow(d), " parcel-year rows")
 
-w <- dcast(d, car_id + group + area_ha ~ year,
+# ---- occupation: first year the deforested share reaches 10% -------------------
+occ <- d[year %in% occ_years & !is.na(deforestation_rate) &
+           deforestation_rate >= OCCUPIED_RATE,
+         .(occupation_year = min(year)), by = car_id]
+message("parcels ever reaching ", OCCUPIED_RATE, "% by ", max(occ_years), ": ", nrow(occ))
+
+w <- dcast(d[year %in% c(2004, needed_outcome)], car_id + group + area_ha ~ year,
            value.var = c("deforested_area_ha", "deforestation_rate"))
 setnames(w, gsub("^deforested_area_ha_", "defor_ha_", names(w)))
 setnames(w, gsub("^deforestation_rate_", "rate_", names(w)))
+w <- merge(w, occ, by = "car_id", all.x = TRUE)
 
 # ---- eligibility --------------------------------------------------------------
-w[, occupied_2004 := !is.na(rate_2004) & rate_2004 > OCCUPIED_RATE]
-w[, occupied_2014 := !is.na(rate_2014) & rate_2014 > OCCUPIED_RATE]
+w[, occupied_by_2004 := !is.na(occupation_year) & occupation_year <= 2004]
 w[, small := !is.na(area_ha) & area_ha <= AREA_CAP &
      !is.na(defor_ha_2004) & defor_ha_2004 <= AREA_CAP]
 
 w[, class := fifelse(
   group == "never_eligible", "never_eligible",
-  fifelse(occupied_2004 & small, "eligible", "ineligible")
+  fifelse(occupied_by_2004 & small, "eligible", "ineligible")
 )]
 
-# Legacy drops claims with no use ever; restrict the treated pool to parcels that
-# are occupied at some point in the window.
-w[, in_sample := group == "never_eligible" | occupied_2014 | occupied_2004]
+# Appendix C step 1: drop properties with < 10% deforested area in 2014.
+w[, in_sample := group == "never_eligible" |
+    (!is.na(rate_2014) & rate_2014 >= OCCUPIED_RATE)]
 
 fwrite(w, file.path(emp_dir, "parcel_eligibility.csv"))
 message("Wrote: ", file.path(emp_dir, "parcel_eligibility.csv"))
