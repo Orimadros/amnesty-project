@@ -34,6 +34,7 @@ LAV_DIR := code/01_build/03_lavoura
 LAV_WORKBOOK := data/input/landvalues/vnp/Lavoura_FNP.xlsx
 LAV01_STAMP := $(STAMP_DIR)/lavoura01_regions.stamp
 LAV02_STAMP := $(STAMP_DIR)/lavoura02_parcels.stamp
+LAV03_STAMP := $(STAMP_DIR)/lavoura03_nb_join.stamp
 
 # NB/VNP chain: FNP North-Brazil land prices -> wide (state x region) x year panels.
 # NOTE: the source workbook is "data/input/landvalues/vnp/Land Price_North Brazil_FNP.xlsx".
@@ -82,7 +83,7 @@ help:
 	@echo "  make -f analysis.mk 01_car      # run full CAR chain (00-05) + scaffold"
 	@echo "  make -f analysis.mk 02_vtn      # run VTN 0-5"
 	@echo "  make -f analysis.mk 02_vtn_car  # run VTN steps 6-8 (CAR-dependent)"
-	@echo "  make -f analysis.mk 03_lavoura  # run lavoura steps 1-2 (needs VTN 6)"
+	@echo "  make -f analysis.mk 03_lavoura  # run lavoura steps 1-3 (needs VTN 6 + vnp)"
 	@echo "  make -f analysis.mk 04_mapbiomas # run MapBiomas backbone 0-3 (FULL: all years/tiles, hours)"
 	@echo "  make -f analysis.mk 05_vnp      # run NB/VNP price panels (both FNP sheets)"
 	@echo "  make -f analysis.mk full        # run build + analysis aliases"
@@ -148,10 +149,9 @@ $(CAR05_STAMP): $(CAR_SRC)/05_combine_car_biome.R $(CAR_HELPERS) $(CAR01_STAMP) 
 	$(R_SCRIPT) "$(CAR_SRC)/05_combine_car_biome.R"
 	@date > "$@"
 
-# Lavoura chain: 1 FNP prices x CAR regions -> 2 prices attached to parcels.
-# Step 3 (NB + Lavoura comparison) is blocked on the unmigrated NB/VNP track;
-# see docs/notes/lavoura_migration_issues.md issue #L10.
-lavoura: $(LAV02_STAMP)
+# Lavoura chain: 1 FNP prices x CAR regions -> 2 prices attached to parcels ->
+# 3 NB/VNP prices joined alongside (produces what 2_empirics consumes).
+lavoura: $(LAV02_STAMP) $(LAV03_STAMP)
 
 $(LAV01_STAMP): $(LAV_DIR)/1_match_lavoura_regions.R $(LAV_WORKBOOK) $(VTN_CAR_IHS_STAMP) | $(STAMP_DIR)
 	$(R_SCRIPT) "$(LAV_DIR)/1_match_lavoura_regions.R"
@@ -159,6 +159,10 @@ $(LAV01_STAMP): $(LAV_DIR)/1_match_lavoura_regions.R $(LAV_WORKBOOK) $(VTN_CAR_I
 
 $(LAV02_STAMP): $(LAV_DIR)/2_match_lavoura_parcels.R $(LAV01_STAMP) $(VTN_CAR_IHS_STAMP) | $(STAMP_DIR)
 	$(R_SCRIPT) "$(LAV_DIR)/2_match_lavoura_parcels.R"
+	@date > "$@"
+
+$(LAV03_STAMP): $(LAV_DIR)/3_join_nb_lavoura_parcels.R $(LAV01_STAMP) $(VNP01_STAMP) $(VNP02_STAMP) $(VTN_CAR_IHS_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(LAV_DIR)/3_join_nb_lavoura_parcels.R"
 	@date > "$@"
 
 # Full-scale run of the MapBiomas backbone (all years/tiles). Long-running.

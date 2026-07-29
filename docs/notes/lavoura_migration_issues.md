@@ -122,14 +122,50 @@ had been migrated but never executed, this had gone unnoticed. Fixed to
 because `make ... | tail` returns tail's exit status -- the same trap recorded in
 the CAR notes. All runs here log to a file and append an explicit `EXIT=$?`.
 
-### Issue #L10 — step 3 blocked on the NB/VNP track (NOT MIGRATED)
+### Issue #L10 — step 3 was blocked on the NB/VNP track (RESOLVED 2026-07-29)
 `3.match_lavoura_data.R` joins NB (VNP) prices alongside Lavoura and needs
-`data/clean/vnp/city_region_yearly_pt{,_pre2015}.rds`, produced by
-`legacy_repo/code/patricio_preach_tomas_work/code/Tomas_NB_processing/` (six
-scripts, unmigrated). Its Lavoura half is already satisfied by step 2's wide panel.
-The raw NB workbooks (`vnp_2002_2017.xlsx`, `Land Price_North Brazil_FNP.xlsx`) are
-now vendored under `data/input/landvalues/vnp/`, so that track is unblocked on
-inputs and only needs the migration work.
+`data/clean/vnp/city_region_yearly_pt{,_pre2015}.rds`. Those are now produced by
+`code/01_build/05_vnp/` (see `docs/notes/vnp_migration_issues.md`), so step 3 is
+migrated and run as `3_join_nb_lavoura_parcels.R`.
+
+### Issue #L11 — `first(na.omit(x))` on an all-NA group (HARDENED)
+Legacy step 3 collapses the stacked NB panels with
+`summarise(across(where(is.numeric), ~ first(na.omit(.x))))`. When a price column is
+entirely NA within a region key, `na.omit()` returns a zero-length vector and
+`dplyr::first()` on that either errors or returns an implicit NA depending on version.
+Given the NB panel is 94% empty (issue #V4), all-NA groups are common, not exotic.
+Replaced with an explicit helper that returns `NA_real_` for the empty case. Same
+result where legacy worked, no crash where it didn't.
+
+### Issue #L12 — wide table written as RDS only, plus a compact long panel (DEVIATION)
+Legacy step 3 wrote both `.rds` and `.csv` of the joined table. After the NB join that
+table is ~165,940 rows x ~1,700 mostly-empty columns for the eligible category alone;
+as CSV that is roughly 10 GB of `,NA,`. The `.rds` is kept (gzip-compressed, 233 MB for
+eligible -- it is what `2_empirics.R:2313` reads, so the faithful wide form survives)
+and the CSV of the wide table is dropped.
+Added instead `<cat>_parcel_price_panel.csv`: one row per (parcel, year) with the mean
+NB price across that region's land types and the single Lavoura price. This is the form
+`2_empirics` actually derives anyway (it does `rowMeans` over `preco_*_<year>` columns),
+so it is both smaller and closer to what downstream code wants.
+
+### Issue #L13 — NB prices sit systematically BELOW Lavoura (COMPOSITION, not a defect)
+The rebuilt comparison shows a consistent, widening gap (eligible category, mean
+NB - Lavoura): -656 R$/ha in 2002 growing to -5,489 in 2017.
+This is expected and is NOT evidence of a merge bug. Lavoura is specifically *cropland*
+(`Terra agrícola de grãos`, etc.), the most valuable class, while the NB per-year figure
+averages across every land type recorded for the region -- including standing forest
+(`mata`) and `cerrado`, which are much cheaper. The two series measure different baskets.
+**Directive:** do not treat NB and Lavoura as interchangeable price series, and do not
+"correct" the gap. If a like-for-like comparison is wanted, restrict the NB average to
+comparable land types before differencing.
+
+### Issue #L14 — the two sources are genuinely complementary (COVERAGE)
+Lavoura alone leaves 43,695 of 165,940 eligible parcels unpriced in 2017 (it covers 21
+of 29 CAR-bearing regions). NB covers a different 17 of 29. Together, only **2,459
+parcels (1.5%)** have no price from either source in any year (ineligible 4.6%, legal
+2.7%). This is the main practical payoff of migrating the NB track.
+Note the era break from issue #V4 is visible here too: the share of parcels carrying
+BOTH prices drops from 69.5% (2002-2015) to 57.9% (2016-2017).
 
 ## Migration status
 
