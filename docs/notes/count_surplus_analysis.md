@@ -88,3 +88,73 @@ the difference originates in the CAR scaffold, not in the empirics stages.
 Test (a) and (b): rebuild the group assignment with gleba-first precedence, and check
 whether a state-gleba layer exists in `data/input/` (terrabrasilis or CNFP). That is
 cheap relative to re-running the scaffold's overlap scoring.
+
+---
+
+# Second diagnostic sweep (2026-07-29): three more candidates eliminated
+
+Read the legacy group-construction code against our scaffold and the paper's Appendix B.
+
+## Eliminated: assignment precedence (candidate (a))
+
+Appendix B's numbered recipe tests gleba membership FIRST and lets only non-gleba
+parcels become control. **The legacy code does the opposite**, at `2_empirics.R`:
+
+```r
+395: ccar_clean_updated <- ccar_rez        %>% filter(overlap*100 > 1)   # reservations = CONTROL
+418: ccar_not_in_rez    <- car_amazon      %>% filter(!COD_IMOVEL %in% ccar_clean_updated$COD_IMO)
+497: ccar_dirty         <- ccar_not_in_rez %>% filter(overlap*100 > 1)   # glebas      = TREATED
+```
+
+Control is assigned first; glebas are then found among the remainder. **Our scaffold
+matches the legacy code**, not Appendix B. Since Table 1 was produced by the code and
+not by the appendix text, our precedence is almost certainly correct and Appendix B's
+ordering is another inaccuracy in the draft. Candidate (a) is not the cause.
+
+## Eliminated: the gleba threshold (candidate (c))
+
+Legacy `overlap` is `intersect_area / imovel_area`, a ratio — the comment at line 395
+confirms it ("overlap can be more than 100 (100%) because it's intersect area / imovel
+area"). So `overlap*100 > 1` is **>1%**, matching our scaffold. Appendix B's "0.1%" does
+not match the code that generated the results. Not the cause, and our 1% is right.
+
+## Eliminated: CNFP vintage and layer definitions
+
+Checked line by line — our scaffold matches legacy exactly on all three:
+
+| | legacy (`2_empirics.R`) | our scaffold |
+|---|---|---|
+| CNFP vintage | `data/raw/cnfp/SHP_2013/` (line 64) | `data/input/cnfp/SHP_2013` (line 123) |
+| control areas | `governo == "FEDERAL"` & `classe` matches UC\|TI (line 73) | same (lines 174-176) |
+| target areas | `governo == "FEDERAL"` & `protecao` matches SEM DESTINACAO (line 76) | same (lines 179-181) |
+
+(Resolves CAR issue #12's open question: the scaffold correctly uses the 2013 vintage,
+matching legacy; only stage 02 uses the 2020 set.)
+
+## ONE deviation found — and it points the wrong way
+
+Our scaffold line 185 does `target_areas <- st_erase(target_areas, control_areas)`.
+Legacy has exactly this, **commented out** (lines 113-114):
+```r
+#glebas1 <- st_erase(glebas1, st_union(indigenous))
+#glebas1 <- st_erase(glebas1, st_union(conservation))
+```
+So we shrink the target area where legacy does not. That would give us FEWER treated
+parcels than legacy, yet we have ~40% MORE. Worth fixing for fidelity, but it cannot
+explain the surplus — it partially offsets it.
+
+## Where that leaves the search
+
+Eliminated so far: conflict resolution (too small), cancelled CARs, assignment
+precedence, gleba threshold, CNFP vintage, control/target layer definitions.
+
+Remaining lead — **the starting universe**. Appendix B reports "Of the **892,670** CARs
+in the Amazon biome" but "Of the **829,260** CARs we have **processed**" — a gap of
+63,410 that the paper does not explain, only partly accounted for by the 32,553
+cancelled. If their processed universe is materially smaller than our
+`car_combined_amazonBiome2`, the surplus originates upstream in the CAR scaffold rather
+than anywhere in the empirics stages. Our stage-00 CAR count (892,630) matches their
+892,670 almost exactly, so the divergence is in what happens between "in the biome" and
+"processed".
+
+**This is now the top question for the authors:** what reduces 892,670 CARs to 829,260?
