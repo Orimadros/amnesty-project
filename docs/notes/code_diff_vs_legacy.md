@@ -122,3 +122,82 @@ Implement erasure, move resolution ahead of the split, re-run. If the ineligible
 does not fall from ~20.8% toward 11.4%, then no code difference we have found explains the
 gap, and the remaining explanation is in Table 1's own arithmetic — which already fails to
 reconcile (4.1 Mha / 15,254 over 661 ha implies ~40%, not 11.4%).
+
+---
+
+# RESULT (2026-07-29): hypothesis D1+D2 is FALSIFIED
+
+Implemented all three differences and re-ran:
+- **D2**: stage 4 now records the erasure partner; new **stage 4b** rebuilds each erased
+  region and measures its deforestation for all 28 years; stage 2 subtracts it.
+- **D1**: stage 2 applies that adjustment BEFORE the `<=1500 ha` and occupied-by-2004
+  tests, reproducing legacy's order. `in_sample` correctly still uses the PRE-erasure
+  2014 rate, since legacy's active2014 filter runs before cleaning.
+- **D3**: legacy's `filter(!is.na(area) & area < 100000)` on the ineligible group.
+
+## First: a correction to the D2 sizing
+
+I previously estimated the erasure at "438.5 ha, ~70% of parcel area". **That was wrong
+by an order of magnitude.** It summed *every* overlap for a flagged parcel, including
+pairs that were never erased. Measured properly, from the union of only the erasure
+partners:
+
+**mean erased area = 43.5 ha**, against a mean parcel area of ~626 ha — about **7%**,
+not 70%. Mean erased deforestation: 13.2 ha (2004), 17.8 (2008), 20.5 (2014).
+
+## What changed
+
+| ineligible | before | after D1+D2+D3 | paper |
+|---|---|---|---|
+| N | 21,923 | 19,113 | 15,254 (+25%, was +44%) |
+| **mean rate 2008** | 20.4% | **23.5%** | 11.4% (**+106%, was +79%**) |
+| deforested Mha 2008 | 5.009 | **4.444** | 4.1 (**+8%**, was +22%) |
+| deforested Mha 2014 | 5.741 | 5.048 | 4.7 (+7%, was +22%) |
+| mean area ha | 674.3 | 682.6 | 661 (+3%) |
+
+| DiD (legacy-forest rate) | before | after | paper |
+|---|---|---|---|
+| eligible beta | −1.708 | −1.742 | −1.412 |
+| **ineligible beta** | +9.788 | **+9.502** | **+4.204** |
+
+## Verdict
+
+**The totals improved substantially** — ineligible deforested area went from +22% to
+**+8%**, and mean area is within 3%. **The rate got worse**, from +79% to +106%, and the
+coefficient barely moved (+9.79 → +9.50 against a target of +4.20).
+
+This is the falsification I pre-registered: *"if the ineligible mean rate does not fall
+from ~20.8% toward 11.4%, then no code difference we have found explains the gap."*
+It did not fall. It rose.
+
+**No code difference between our pipeline and the legacy code explains the ineligible
+rate gap.** Every structural candidate has now been implemented or eliminated:
+
+| candidate | outcome |
+|---|---|
+| occupation level vs first-crossing | fixed, moved counts not rates |
+| rate denominator | tested, 20.4 vs 20.0 — no effect |
+| declared vs geometric area | tested, moves 12 parcels |
+| control-group sample filter | fixed, large improvement to control |
+| conflict resolution | implemented, fixed counts not coefficients |
+| assignment precedence | matches legacy (Appendix B is wrong) |
+| gleba threshold | matches legacy (Appendix B is wrong) |
+| CNFP vintage / layer definitions | match exactly |
+| erasure + ordering (D1+D2) | implemented, rate moved AWAY |
+| ineligible area filter (D3) | implemented, rate moved AWAY |
+
+## What remains
+
+Table 1's ineligible column does not reconcile with itself. With the paper's own
+figures — 4.1 Mha over 15,254 parcels of mean claim area 661 ha — the implied rate is
+**~40%**, not the stated **11.4%**. The eligible and never-eligible columns are both
+internally coherent under the same check (50.1 vs 58.4; 37.3 vs 35.7).
+
+Our post-D1/D2/D3 ineligible deforested area (4.444 Mha) and mean area (682.6 ha) now
+both sit within 8% of the paper's. It is specifically and only the **rate** that
+disagrees — which is the one number in that column that cannot be derived from the
+others.
+
+**Recommendation:** stop searching the code. Ask the authors how Table 1's 11.4% and
+Table 3's 11.4% outcome baseline were computed, because our reconstruction agrees with
+every other number in that column.

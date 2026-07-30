@@ -58,14 +58,41 @@ message("occupation years available: ", min(occ_years), "-", max(occ_years),
 d <- rbindlist(lapply(all_files, fread))
 message("loaded ", nrow(d), " parcel-year rows")
 
+# ---- apply the conflict algorithm's erasure, if it has been computed -----------
+# Legacy resolves conflicts BEFORE the eligibility split, so its `area <= 1500` and
+# `occupied by 2004` tests see the SHRUNKEN polygons (docs/notes/code_diff_vs_legacy.md
+# D1+D2). Re-running this stage after 4b reproduces that order: the first run supplies
+# in_sample for resolution, this run classifies on the adjusted values.
+adj_f <- file.path(emp_dir, "erasure_adjustment.csv")
+if (file.exists(adj_f)) {
+  adj <- fread(adj_f)
+  n_adj <- uniqueN(adj$car_id)
+  d <- merge(d, adj[, .(car_id, year, er_defo_px, er_valid_px, erased_ha)],
+             by = c("car_id", "year"), all.x = TRUE)
+  d[is.na(er_defo_px), er_defo_px := 0L]
+  d[is.na(er_valid_px), er_valid_px := 0L]
+  d[, defor_px := pmax(defor_px - er_defo_px, 0L)]
+  d[, valid_px := pmax(valid_px - er_valid_px, 0L)]
+  d[, deforested_area_ha := defor_px * 0.09]
+  d[, rate_raw := deforestation_rate]  # pre-erasure, for the 2014 occupancy filter
+  d[, deforestation_rate := fifelse(valid_px > 0, defor_px / valid_px * 100, NA_real_)]
+  ea <- unique(adj[!is.na(erased_ha), .(car_id, erased_ha)], by = "car_id")
+  d <- merge(d, ea, by = "car_id", all.x = TRUE, suffixes = c("", ".y"))
+  d[!is.na(erased_ha) & erased_ha > 0, area_ha := pmax(area_ha - erased_ha, 0)]
+  message("ERASURE APPLIED to ", n_adj, " parcels (areas and deforestation reduced)")
+} else {
+  message("no erasure adjustment on disk -- classifying on unmodified geometry")
+}
+
 # ---- occupation: first year the deforested share reaches 10% -------------------
 occ <- d[year %in% occ_years & !is.na(deforestation_rate) &
            deforestation_rate >= OCCUPIED_RATE,
          .(occupation_year = min(year)), by = car_id]
 message("parcels ever reaching ", OCCUPIED_RATE, "% by ", max(occ_years), ": ", nrow(occ))
 
+if (!"rate_raw" %in% names(d)) d[, rate_raw := deforestation_rate]
 w <- dcast(d[year %in% c(2004, needed_outcome)], car_id + group + area_ha ~ year,
-           value.var = c("deforested_area_ha", "deforestation_rate"))
+           value.var = c("deforested_area_ha", "deforestation_rate", "rate_raw"))
 setnames(w, gsub("^deforested_area_ha_", "defor_ha_", names(w)))
 setnames(w, gsub("^deforestation_rate_", "rate_", names(w)))
 w <- merge(w, occ, by = "car_id", all.x = TRUE)
@@ -80,14 +107,26 @@ w[, class := fifelse(
   fifelse(occupied_by_2004 & small, "eligible", "ineligible")
 )]
 
-# Appendix C step 1: drop properties with < 10% deforested area in 2014.
+# Appendix C step 1: drop properties with < 10% deforested area in 2014. Legacy applies
+# this BEFORE conflict resolution (2_empirics.R:636), so it must use the PRE-erasure
+# rate; only the eligibility tests above see the shrunken geometry.
 # This applies to the CONTROL group too. Table 1's note is explicit: "Until 2008, all
 # of these rural parcels illegally occupied public land in the Amazon" -- never-eligible
 # parcels are occupied squatters, not every CAR that happens to touch a reserve. An
 # earlier version exempted them, which left the control group at 13,025 parcels
 # averaging 3,980 ha (paper: 7,049 at 760 ha). Applying the filter brings it to 6,140
 # at 1,093 ha.
-w[, in_sample := !is.na(rate_2014) & rate_2014 >= OCCUPIED_RATE]
+w[, in_sample := !is.na(rate_raw_2014) & rate_raw_2014 >= OCCUPIED_RATE]
+
+# Legacy 2_empirics.R:1704 applies an extra filter to the ineligible group:
+#   inelegible <- inelegible %>% filter(!is.na(area) & area < 100000)
+# where `area` is the rate denominator, deforested/(rate/100) -- i.e. legacy forest.
+# The <100000 clause is nearly inert; the !is.na clause drops zero-rate parcels.
+w[, lf_ha := fifelse(!is.na(rate_2008) & rate_2008 > 0,
+                     defor_ha_2008 / (rate_2008 / 100), NA_real_)]
+drop_inelig <- w$class == "ineligible" & (is.na(w$lf_ha) | w$lf_ha >= 1e5)
+message("legacy ineligible filter drops ", sum(drop_inelig & w$in_sample), " in-sample parcels")
+w[drop_inelig == TRUE, in_sample := FALSE]
 
 fwrite(w, file.path(emp_dir, "parcel_eligibility.csv"))
 message("Wrote: ", file.path(emp_dir, "parcel_eligibility.csv"))

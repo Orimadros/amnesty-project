@@ -130,7 +130,7 @@ for (m in munis) {
   ids <- unique(c(pm$a, pm$b))
   g <- geo[geo$car_id %in% ids, ]
   if (nrow(g) == 0 || nrow(pm) == 0) {
-    saveRDS(data.table(car_id = character(), action = character()), out_f)
+    saveRDS(data.table(car_id = character(), action = character(), other_id = character()), out_f)
     done <- done + 1L; next
   }
 
@@ -142,13 +142,13 @@ for (m in munis) {
     !(e[2] < bb["xmin"] || e[1] > bb["xmax"] || e[4] < bb["ymin"] || e[3] > bb["ymax"])
   }, tiles)
   if (length(hit) == 0) {
-    saveRDS(data.table(car_id = character(), action = character()), out_f)
+    saveRDS(data.table(car_id = character(), action = character(), other_id = character()), out_f)
     done <- done + 1L; next
   }
   rr <- if (length(hit) == 1) rast(hit[[1]]) else do.call(terra::merge, lapply(hit, rast))
 
   gi <- setNames(seq_len(nrow(g)), g$car_id)
-  decisions <- data.table(car_id = character(), action = character())
+  decisions <- data.table(car_id = character(), action = character(), other_id = character())
   dropped <- character(0)
 
   for (k in seq_len(nrow(pm))) {
@@ -195,7 +195,9 @@ for (m in munis) {
     }
 
     if (!is.null(act)) {
-      decisions <- rbind(decisions, data.table(car_id = who, action = act))
+      partner <- if (identical(who, A)) B else A
+      decisions <- rbind(decisions,
+                         data.table(car_id = who, action = act, other_id = partner))
       if (act %in% c("drop", "drop_random")) dropped <- c(dropped, who)
     }
   }
