@@ -85,3 +85,66 @@ CR1 and may differ slightly from `felm`'s.
    sharpest test of that stage.
 2. Ask the authors which denominator Table 1 uses, given the claim-area rate is degenerate
    on declared areas.
+
+---
+
+# Second pass (2026-07-29) — after conflict resolution
+
+Conflict resolution ran (24,121 parcels dropped) and the DiD was re-estimated on the
+resolved set. **It fixed the counts and barely moved the coefficients.**
+
+## Counts: large improvement
+
+| group | unresolved | resolved | paper | resolved diff |
+|---|---|---|---|---|
+| eligible | 98,941 | 81,404 | 71,171 | +14% (was +39%) |
+| ineligible | 21,923 | 16,571 | 15,254 | **+9%** (was +44%) |
+| never-eligible | 6,140 | 4,908 | 7,049 | **−30%** (was −13%) |
+| total | 127,004 | 102,883 | 93,474 | +10% (was +36%) |
+
+The stage removed ~72% of the surplus — more than the "at most half" estimated in
+`count_surplus_analysis.md`, though it still does not close the gap, as predicted.
+
+## Coefficients: essentially unchanged
+
+| comparison | unresolved | resolved | paper |
+|---|---|---|---|
+| eligible (legacy-forest rate) | −1.406 | **−1.708** | −1.4 |
+| ineligible (legacy-forest rate) | +10.361 | **+9.788** | +4.2 |
+| eligible (claim-area rate) | −1.736 | −2.153 | −1.4 |
+| ineligible (claim-area rate) | +17.724 | +11.865 | +4.2 |
+
+**The prediction that conflict resolution would pull the ineligible coefficient toward
++4.2 was wrong.** It moved from +10.4 to +9.8 — a 6% change against a gap of 2.5x. The
+eligible coefficient moved slightly AWAY from the paper (−1.41 to −1.71).
+
+## What this establishes
+
+The parcel surplus and the coefficient gap are **independent problems**. Removing 24,121
+duplicate claims corrected the counts without materially changing the estimated effects,
+which means the remaining coefficient discrepancy is not a sample-size artefact.
+
+The driver is the persistent **ineligible rate level**: ours is 21.6% pre-2009 against the
+paper's 11.4%, essentially unchanged by resolution (was 20.4%). A treated group whose
+outcome runs ~2x the paper's will produce a proportionally larger coefficient on the same
+underlying response. Closing the coefficient gap therefore requires explaining the rate
+gap — which remains the single unresolved discrepancy, now surviving:
+
+- the occupation-definition fix (first-crossing vs level test)
+- the denominator question (legacy forest vs claim area)
+- declared vs geometric area
+- the control-group sample-filter bug
+- and now conflict resolution
+
+## New concern: the control group
+
+Never-eligible went from −13% to **−30%** against the paper. Conflict resolution dropped
+1,232 control parcels, and the control group is now the worst-fitting of the three. Since
+both regressions are estimated against this group, its composition directly scales both
+coefficients. Worth checking whether the algorithm should be applied to control parcels at
+all, or only within the treated pool — the paper does not say.
+
+## Still true
+
+Both signs match, and the qualitative asymmetry — a small decrease among the forgiven, a
+much larger increase among the excluded — holds under every specification tried.

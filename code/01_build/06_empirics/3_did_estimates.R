@@ -51,6 +51,20 @@ if (length(absent) > 0) {
 elig <- fread(elig_f, select = c("car_id", "class", "in_sample"))
 elig <- elig[in_sample == TRUE, .(car_id, class)]
 
+# If the conflict-resolution stage has run, restrict to the parcels it kept. Set
+# EMP_RESOLVED=0 to estimate on unresolved boundaries instead (the paper states in
+# 2.3 that its results carry either way, so both are worth reporting).
+resolved_f <- file.path(emp_dir, "parcels_resolved_2014.csv")
+use_resolved <- Sys.getenv("EMP_RESOLVED", unset = "1") != "0" && file.exists(resolved_f)
+if (use_resolved) {
+  keep_ids <- fread(resolved_f, select = "car_id")$car_id
+  before <- nrow(elig)
+  elig <- elig[car_id %in% keep_ids]
+  message("using CONFLICT-RESOLVED parcels: ", before, " -> ", nrow(elig))
+} else {
+  message("using UNRESOLVED boundaries: ", nrow(elig), " parcels")
+}
+
 d <- rbindlist(lapply(files, fread))
 d <- merge(d, elig, by = "car_id")
 
