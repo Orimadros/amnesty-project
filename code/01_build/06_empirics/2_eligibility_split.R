@@ -81,8 +81,13 @@ w[, class := fifelse(
 )]
 
 # Appendix C step 1: drop properties with < 10% deforested area in 2014.
-w[, in_sample := group == "never_eligible" |
-    (!is.na(rate_2014) & rate_2014 >= OCCUPIED_RATE)]
+# This applies to the CONTROL group too. Table 1's note is explicit: "Until 2008, all
+# of these rural parcels illegally occupied public land in the Amazon" -- never-eligible
+# parcels are occupied squatters, not every CAR that happens to touch a reserve. An
+# earlier version exempted them, which left the control group at 13,025 parcels
+# averaging 3,980 ha (paper: 7,049 at 760 ha). Applying the filter brings it to 6,140
+# at 1,093 ha.
+w[, in_sample := !is.na(rate_2014) & rate_2014 >= OCCUPIED_RATE]
 
 fwrite(w, file.path(emp_dir, "parcel_eligibility.csv"))
 message("Wrote: ", file.path(emp_dir, "parcel_eligibility.csv"))
@@ -104,13 +109,16 @@ print(as.data.frame(s))
 
 # ---- paper's Table 1 / section 3.2 figures ------------------------------------
 paper <- data.table(
+  # Actual Table 1: "CHARACTERISTICS OF OCCUPATIONS IN TARGET AND CONTROL AREAS".
+  # Rate is defined in the table note as deforested / claim area, with areas taken
+  # from the boundaries submitted by occupants (i.e. declared, not geometric).
   class = c("eligible", "ineligible", "never_eligible"),
-  p_n_properties = c(NA, 15000, NA),
-  p_defor_Mha_2008 = c(5.10, 4.10, NA),
-  p_defor_Mha_2014 = c(5.27, 4.66, NA),
-  p_mean_rate_2008 = c(58.4, 11.4, NA),
-  p_mean_defor_ha_2008 = c(69.03, 204.3, NA),
-  p_pct_change_defor = c(NA, NA, 11.0)
+  p_n_properties = c(71171, 15254, 7049),
+  p_mean_area_ha = c(143, 661, 760),
+  p_mean_rate_2008 = c(58.4, 11.4, 35.7),
+  p_defor_Mha_2008 = c(5.1, 4.1, 2.0),
+  p_defor_Mha_2014 = c(5.3, 4.7, 2.2),
+  p_pct_change_defor = c(6.3, 15.6, 11.5)
 )
 
 cmp <- merge(s, paper, by = "class", all = TRUE)
@@ -132,7 +140,7 @@ for (cl in c("eligible", "ineligible", "never_eligible")) {
   show("deforested Mha 2008", r$defor_Mha_2008, r$p_defor_Mha_2008)
   show("deforested Mha 2014", r$defor_Mha_2014, r$p_defor_Mha_2014)
   show("mean rate 2008 (%)", r$mean_rate_2008, r$p_mean_rate_2008)
-  show("mean defor ha 2008", r$mean_defor_ha_2008, r$p_mean_defor_ha_2008)
+  show("mean area ha", r$mean_area_ha, r$p_mean_area_ha)
   show("% change 2008->2014", r$pct_change_defor, r$p_pct_change_defor)
 }
 

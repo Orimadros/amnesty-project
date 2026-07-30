@@ -177,3 +177,108 @@ Two things only they can settle:
 2. **What exactly is Table 1's "deforestation rate"** — mean of per-parcel ratios, or
    aggregate deforested/aggregate area? And over which denominator (legacy forest or total
    property area)? This determines whether a 20.4% vs 11.4% gap is even comparable.
+
+---
+
+# Third pass (2026-07-29) — the ACTUAL Table 1, and a bug in our sample rule
+
+## The real Table 1 (found on p.32)
+
+Earlier passes compared against figures scraped from §3.2 prose plus an *inferred* mean
+area. The actual table is:
+
+**TABLE 1: CHARACTERISTICS OF OCCUPATIONS IN TARGET AND CONTROL AREAS**
+
+| | Eligible | Ineligible | Never eligible |
+|---|---|---|---|
+| # Properties | 71,171 | 15,254 | 7,049 |
+| Property Area (ha, t<2009) | 143 | 661 | 760 |
+| Property Deforestation Rate (t<2009) | 58.4% | 11.4% | 35.7% |
+| Δ Property Deforested Area | 6.3% | 15.6% | 11.5% |
+| Total Deforested Area 2008 (Mha) | 5.1 | 4.1 | 2.0 |
+| Total Deforested Area 2014 (Mha) | 5.3 | 4.7 | 2.2 |
+
+**RETRACTION:** the earlier "implied ineligible mean area ~1,792 ha" was wrong, as flagged
+at the time. The true figure is **661 ha** and ours is **674 ha (+2%)**. The pass-1/2
+diagnosis "we classify too many small parcels as ineligible" was therefore **incorrect** —
+our ineligible area was right all along.
+
+## Rate definition — settled by the table note
+
+> "We define deforestation rates as the share of a property claim's area that has been
+> deforested. Property areas are calculated directly from boundaries submitted by land
+> occupants."
+
+So: **deforested / claim area**, area **as declared** by the occupant. Neither of the two
+guesses in pass 2 was right: not legacy forest, and declared area (not geometric) is
+correct — which vindicates the original `NUM_ARE` choice.
+
+## Bug found and fixed: the control group escaped the occupancy filter
+
+The Table 1 note states *"Until 2008, all of these rural parcels illegally occupied public
+land in the Amazon"* — never-eligible parcels are **occupied squatters**, not every CAR
+that happens to touch a reserve. Our `in_sample` exempted `never_eligible` from the
+>=10%-in-2014 filter. Fixed.
+
+| never-eligible | before fix | after fix | paper |
+|---|---|---|---|
+| N | 13,025 | **6,140** | 7,049 (−13%) |
+| mean area ha | 3,980 | **1,093** | 760 (+44%) |
+| mean rate 2008 | 21.3% | **43.4%** | 35.7% (+22%) |
+| Mha 2008 | 2.65 | **2.29** | 2.0 (+14%) |
+| Mha 2014 | 2.91 | **2.48** | 2.2 (+13%) |
+
+Count error went from +85% to −13%.
+
+## Current standing vs Table 1
+
+| quantity | ours | paper | diff |
+|---|---|---|---|
+| eligible N | 98,941 | 71,171 | +39% |
+| eligible mean area | 134.9 | 143 | −6% |
+| eligible mean rate | 56.4 | 58.4 | −3% |
+| eligible Mha 2008 / 2014 | 6.54 / 6.83 | 5.1 / 5.3 | +28% / +29% |
+| eligible Δ | 4.5% | 6.3% | −29% |
+| ineligible N | 21,923 | 15,254 | +44% |
+| **ineligible mean area** | 674.3 | 661 | **+2%** |
+| ineligible mean rate | 20.4 | 11.4 | +79% |
+| ineligible Mha 2008 / 2014 | 5.01 / 5.74 | 4.1 / 4.7 | +22% / +22% |
+| ineligible Δ | 14.6% | 15.6% | −6% |
+| never-elig N | 6,140 | 7,049 | −13% |
+| never-elig mean area | 1,093 | 760 | +44% |
+| never-elig mean rate | 43.4 | 35.7 | +22% |
+| never-elig Mha 2008 / 2014 | 2.29 / 2.48 | 2.0 / 2.2 | +14% / +13% |
+| never-elig Δ | 8.5% | 11.5% | −26% |
+
+Areas and rates are close for eligible (−6%, −3%) and the change-over-time figures are
+within 6% for ineligible. Counts remain +39%/+44% for the treated groups — the
+conflict-resolution surplus, since Table 1 is a POST-resolution table.
+
+## The ineligible rate: possibly an inconsistency in the paper
+
+Table 1's own ineligible column does not reconcile with itself under a ratio-of-means
+reading: 4.1 Mha / 15,254 = **268.8 ha** mean deforested area, against a stated mean claim
+area of 661 ha, giving **40.7%** — not the stated 11.4%. The same check on the other two
+columns is coherent (eligible 71.7/143 = 50.1% vs 58.4% stated; never-eligible
+283.7/760 = 37.3% vs 35.7% stated).
+
+A mean-of-ratios far below the ratio-of-means is *possible* for the ineligible group —
+it contains many post-2004 arrivals with little clearing alongside a few very large,
+heavily cleared parcels — so 11.4% is not necessarily an error. But the gap is a factor of
+3.6, versus ~1.2 and ~1.05 for the other groups, which makes the ineligible column the
+odd one out. **Worth putting to the authors.** Our own figures show the same qualitative
+pattern but milder: mean-of-ratios 20.4% against ratio-of-means 33.9%.
+
+## Would the 0.1% gleba threshold help? Probably not — and it argues our 1% is right
+
+A 0.1% threshold is **looser** than our 1%, so it admits MORE parcels into the target
+pool. Our treated counts are already +39%/+44%, so it moves the wrong way. It would also
+pull in mostly large parcels that merely clip a gleba boundary, raising the target pool's
+mean area — but our eligible (−6%) and ineligible (+2%) areas already match, so we do not
+need them.
+Given the number of other placeholders and inconsistencies in this draft, Appendix B's
+"0.1%" is plausibly a typo for the 1% the legacy code implements. Still worth confirming,
+but the evidence now points to 1% being correct.
+Note the asymmetry: for the CONTROL side, a **stricter** threshold would help — our
+never-eligible mean area is +44%, consistent with huge parcels that only marginally clip a
+reserve being counted whole.
