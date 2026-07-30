@@ -110,3 +110,70 @@ test derived from the transition rasters rather than a level test.
    had — so those cases can only match in distribution, never bit-identically.
 2. **Resolve the occupancy threshold** with the authors (see anomaly above).
 3. Re-run stage 2 and re-compare; then the DiD assembly.
+
+---
+
+# Second pass (2026-07-29, after the 1987-2004 occupation fix)
+
+Re-ran with the first-crossing occupation test (18 years, 1987-2004) and the
+Appendix C step-1 sample rule. 112,904 parcels ever reach 10% by 2004.
+
+| quantity | pass 1 | pass 2 | paper | pass-2 diff |
+|---|---|---|---|---|
+| eligible N | 98,547 | 98,941 | — | — |
+| eligible total Mha 2008 | 6.534 | 6.537 | 5.10 | +28% |
+| eligible mean rate 2008 | 56.3 | 56.4 | 58.4 | −3% |
+| eligible mean defor ha | 66.30 | 66.06 | 69.03 | −4% |
+| **ineligible N** | 25,790 | **21,923** | ~15,000 | +46% (was +72%) |
+| ineligible total Mha 2008 | 5.085 | 5.009 | 4.10 | +22% |
+| **ineligible mean rate 2008** | 20.4 | **20.4** | 11.4 | **+79% (unchanged)** |
+| ineligible mean defor ha | 197.16 | 228.48 | 204.3 | +12% (was −3%) |
+| ineligible mean area ha | 592.3 | 674.3 | — | — |
+| never-eligible % change | 10.2 | 10.2 | 11.0 | −7% |
+
+**What the fix achieved:** the ineligible count gap halved (+72% -> +46%) and mean
+area rose (592 -> 674 ha). Eligible-side agreement held (rate −3%, mean defor −4%).
+
+**What it did not:** the mean-rate anomaly is *completely unchanged* at 20.4% vs 11.4%.
+My prediction that the occupancy fix would "largely fix" the composition anomaly was
+wrong — the reclassified parcels had near-average rates, so the mean did not move. Mean
+deforested area also overshot (−3% -> +12%).
+
+## Three hypotheses tested and eliminated
+
+1. **Occupation level-vs-first-crossing (issue #E1).** Real difference, correctly fixed,
+   but it moves counts, not the rate.
+2. **Rate denominator.** Paper §3.2 defines its outcome as `deforested/total area` while
+   Appendix C's occupation test uses `deforested/legacy forest`. Computing both:
+   ineligible 20.4% (legacy forest) vs 20.0% (total area). **Not the cause.**
+3. **Declared vs geometric area.** Legacy uses `st_area(car)/10000` (line 1227); we used
+   the declared `NUM_ARE`. Measured: mean 343.8 vs 342.8 ha, median 66.3 vs 66.4, and
+   4,759 vs 4,895 parcels over 1,500 ha. Reclassifying on geometric area moves ineligible
+   from 21,923 to 21,935 and its rate from 20.4 to 20.5. **Not the cause.**
+
+## Leading remaining candidate: the gleba threshold
+
+Appendix B step 2 defines a "dirty" CAR as **>0.1%** of its area inside a federal gleba.
+Our scaffold uses **>1%** (see `paper_appendix_specs.md` section 4).
+
+Mechanism: a 0.1% threshold admits parcels that only marginally clip a gleba. Large
+parcels are far more likely to clip a boundary at a low share, so the looser threshold
+should pull in many more big, lightly-cleared properties — which would raise the
+ineligible group's mean area and lower its mean rate, the exact direction needed.
+
+Caveat on the arithmetic: the paper's "implied mean area" of ~1,792 ha (204.3 / 0.114)
+assumes its rate is a ratio of means. If Table 1 reports a mean of ratios, that implied
+figure is not valid, so the composition cannot be pinned down from two summary statistics
+alone. Do not treat ~1,792 ha as established.
+
+Testing this requires re-running the CAR scaffold's overlap scoring at 0.1% — the
+expensive step, though already optimised (CAR issue #26).
+
+## Question for the authors
+
+Two things only they can settle:
+1. **Is the gleba threshold 0.1% (Appendix B) or 1% (the legacy code)?** A 10x difference
+   in target-pool membership.
+2. **What exactly is Table 1's "deforestation rate"** — mean of per-parcel ratios, or
+   aggregate deforested/aggregate area? And over which denominator (legacy forest or total
+   property area)? This determines whether a 20.4% vs 11.4% gap is even comparable.
