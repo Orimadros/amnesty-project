@@ -765,3 +765,43 @@ erase control from target. The earlier S2 test could only see parcels already in
 of our layers, so flips INTO a pool were invisible -- exactly the direction the
 semantics grid says the residual must live in. `15_pool_membership_test.R` scores
 every CAR in the biome under all four combinations.
+
+## RESULT — L7 (pool membership) ELIMINATED
+
+`15_pool_membership_test.R` scored all **801,813** CARs in the biome (16,084 touch the
+control mask, 182,572 the target mask) under every combination:
+
+| variant | control pool | target pool |
+|---|---|---|
+| ours (declared denominator + erased target) | 13,017 | 164,187 |
+| declared + legacy's un-erased target | 13,017 | 164,187 |
+| geometric + erased target | 13,025 | 164,223 |
+| legacy (geometric + un-erased target) | 13,025 | 164,223 |
+| our layers on disk | 13,025 | 164,223 |
+
+- **Declared vs geometric denominator: 8 control / 36 target parcels** (0.02%).
+- **Erasing control from target: ZERO difference**, at any denominator. The two CNFP
+  filters (`classe` UC|TI vs `protecao` SEM DESTINACAO) select disjoint polygons in
+  this vintage, so D6/P2 is definitively **inert** — closing an item that had been
+  open since the first diff note.
+
+Pool membership is therefore NOT the residual. Combined with the semantics grid
+(residual not in the conflict algorithm) and the earlier eliminations (muni-straddle,
+Pará double-processing, microdata-join loss, S1-S4 all small), every mechanism on OUR
+side is now either implemented or measured and ruled out.
+
+## Where the replication stands, definitively
+
+The remaining gaps — eligible N +9% to +17% depending on cleaning semantics,
+ineligible N -2% to -5%, eligible rate ~-8% — are attributable to legacy-side
+artifacts that cannot be reproduced from our data:
+
+1. **N5**, the typo'd `slice()` bounds in legacy's gleba scoring: rows 100,001-149,999
+   of their CAR table were never scored, and rows >= 150,000 were scored by up to six
+   overlapping chunks whose areas are summed. Position-dependent on their row order.
+2. **The 63k slippage** their own appendix concedes (891,234 raw -> 829,260 processed).
+3. **D-C**: Table 1 and Table 2 were built from different intermediate vintages, with
+   the DiD control being the raw uncleaned pool — so no single sample reproduces both.
+4. Unseeded random draws in two conflict rules (distribution-equivalent only).
+
+No further code-level test on our side is expected to move these numbers.
