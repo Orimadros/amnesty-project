@@ -201,3 +201,54 @@ others.
 **Recommendation:** stop searching the code. Ask the authors how Table 1's 11.4% and
 Table 3's 11.4% outcome baseline were computed, because our reconstruction agrees with
 every other number in that column.
+
+---
+
+# RESULT (2026-07-30): the last lead — the muni-straddle filter — is ELIMINATED
+
+Checkpoint 20260729b left one untested candidate: legacy `2_empirics.R:1594-1595`
+collapses per-municipality duplicate measurements and then drops any CAR still
+appearing more than once (`add_count() %>% filter(n == 1)`) — i.e. parcels measured
+with differing values in more than one municipality file, presumed to be parcels
+straddling municipality boundaries. We never implemented it because our pipeline
+measures each parcel exactly once.
+
+## Provenance check (host-side scan, exploratory)
+
+The filter cannot even fire on our data:
+
+- Every one of the 866,659 car_ids in `CleanCARShapes_robust/muni*/` appears in
+  exactly **one** municipality file. Our SICAR vintage assigns each CAR to a single
+  municipality.
+- In all of `temas_ambientais.csv` (6.84M rows), only **6** registro_car carry more
+  than one distinct codigo_ibge (legacy's duplicates entered through this join in
+  their `_update` vintage, plus their per-municipality processing).
+
+So the population legacy dropped can only be identified geometrically.
+
+## Geometric test (`5_muni_straddle_test.R`, run 2026-07-30)
+
+Flag every in-sample parcel whose geometry has > 0.09 ha (one pixel) inside ≥ 2
+municipalities of `municipal_boundaries.shp` (807 munis, planar GEOS, EPSG:5880),
+drop them, recompute Table 1.
+
+| class | straddlers dropped | mean rate 2008: all → dropped | paper |
+|---|---|---|---|
+| eligible | 5,676 / 98,779 | 56.6 → **56.6** | 58.4 |
+| ineligible | 1,361 / 19,113 | 23.5 → **23.0** | 11.4 |
+| never-eligible | 667 / 6,140 | 43.5 → **43.2** | 35.7 |
+
+A 1%-of-area threshold variant moves ineligible to 23.2. **The rate does not move
+toward 11.4%.** (Straddlers are disproportionately LARGE parcels — dropping them cuts
+the ineligible mean claim area 682.6 → 508.7 ha and never-eligible 1,085 → 512 ha —
+but their rates are near the group means.)
+
+Outputs: `data/intermediate/empirics/parcel_muni_straddle.csv`,
+`muni_straddle_test.csv`.
+
+## Verdict
+
+Every identified legacy sample filter is now implemented, tested, or eliminated. The
+recommendation above stands, now with the search exhausted: the paper's 11.4% does
+not follow from its own row (implied ~40%), and no coded filter reproduces it. Ask
+the authors (checkpoint 20260729b, "Questions for the authors", Q1).
