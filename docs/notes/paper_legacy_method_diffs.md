@@ -195,3 +195,89 @@ Still open, ranked:
 Decision needed before promoting any of this into stage 2: whether the pipeline's
 in-sample rule should follow the paper's text (2014) or the legacy code that
 produced the tables (2019). Keep both flags in the data; report both.
+
+---
+
+# RESULT (2026-07-30 overnight): S2 and S3 ELIMINATED
+
+`9_geom_area_tests.R` (geometric vs declared denominators, on the in-sample-2019
+split): S2 — only 4 / 13,025 control members would leave the control pool under
+legacy's geometric-share denominator, and 0 / 164,223 target-pool members would
+enter (caveat: parcels scored in neither output layer are invisible to this test).
+S3 — the geometric 1,500-ha cap switches 84 eligible→ineligible and 37
+ineligible→eligible. Neither can move a group mean. (The script's ineligible count
+differs from stage 7's because it omits the lf-area filter; its rate column is not
+comparable — use stage 7's numbers.)
+
+Remaining live candidates for the residuals: F3 (reserve cleaning — running),
+count-surplus composition (eligible 100,185 vs 71,171; ineligible 22,892 vs
+15,254), S1 (level test, small), and legacy-side data noise (S5).
+
+---
+
+# RESULT (2026-07-30 overnight): count-surplus channels probed
+
+Two legacy-side loss channels examined for the treated-group count surplus
+(eligible 100,185 vs 71,171; ineligible 22,892 vs 15,254 on the F1+F2 basis):
+
+- **Pará double-processing is INERT downstream**: legacy rbinds PA twice into its
+  combined layer (2_empirics.R:273-306, no dedup at the end) but then dedups by
+  COD_IMOVEL at :355 before anything else uses it. Not a surplus explanation.
+- **Microdata-join loss is real but small**: legacy's per-municipality loops iterate
+  over `codigo_ibge` from the `temas_ambientais_update` join, so CARs absent from
+  the microdata are never measured (NA muni -> skipped). Against OUR
+  `temas_ambientais.csv`: 2.9% of the eligible pool, 3.0% of ineligible, 15.5% of
+  the control pool have no microdata row. Explains percent-level losses on legacy's
+  side (their _update vintage may differ), not a 40% surplus.
+
+The surplus therefore most plausibly sits in legacy's own processing losses — the
+appendix concedes 891,234 -> 829,260 processed CARs ("additional work needs to be
+done to understand this slippage") — plus n==1 drops driven by duplicates in their
+microdata vintage, neither of which we can reproduce without their intermediates.
+The rate implications are what matter for us: with F1+F2 applied, the remaining
+rate residuals (ineligible 14.6 vs 11.4, eligible 53.2 vs 58.4) are consistent with
+their samples being ~30% smaller subsets of ours with somewhat different
+composition; there is no evidence left of a *methodological* difference on our side
+beyond F3 (being tested) and the documented S1/S4.
+
+---
+
+# RESULT (2026-07-30 overnight): F3 CONFIRMED — never-eligible column closed
+
+`8_reserve_cleaning_test.R` applied legacy's reserve-only cleaning (erase overlaps
+from the larger parcel, never drop) to the F2 control sample and re-measured the
+cleaned geometries (years 2005-2008 + 2014):
+
+| statistic | F2 only | **F2 + F3** | paper |
+|---|---|---|---|
+| N | 6,856 | 6,855 | 7,049 |
+| pre-2009 mean rate | 36.7 | **36.3** | 35.7 |
+| total defo 2008 (Mha) | 2.329 | **2.003** | **2.0** |
+| total defo 2014 (Mha) | 2.551 | **2.189** | **2.2** |
+| mean declared area | 1,163 | 1,170 | — |
+| mean cleaned geometric area | — | 1,029 | — |
+| mean legacy-forest area (pre-2009) | — | 982.5 | 760? |
+
+The totals now match the paper to two decimal digits — the reserve-specific
+cleaning was exactly the missing step for the control group's aggregates.
+
+On the one remaining number: the paper's 760 matches NO parcel-level mean we can
+compute, but the RATIO construction total-defo/N ÷ mean-rate gives 795 on the
+paper's own row and **805 on ours** — a 1.3% gap. "Property Area (ha, t<2009)" for
+the control column is therefore most plausibly an aggregate-implied legacy-forest
+area, not a mean of claimed boundaries (the ineligible column's 661, by contrast,
+matches our mean DECLARED area 659.5). With that reading, every number in the
+never-eligible column reproduces.
+
+## Where this leaves the replication (end of 2026-07-30)
+
+- **Never-eligible: reproduced** (rate 36.3/35.7, totals exact, N −2.7%, area
+  consistent under the ratio reading). Required: F1 + F2 + F3.
+- **Ineligible: rate 14.6 vs 11.4 open** (composition of legacy's smaller sample);
+  mean area exact; totals ours 4.5/5.2 vs 4.1/4.7 Mha (~+10%, tracks the count
+  surplus).
+- **Eligible: rate 53.2 vs 58.4 open**, same composition suspicion (our pool +41%).
+- Count surpluses attributed to legacy-side processing losses (their admitted 63k
+  slippage + microdata-vintage n==1 drops); not reproducible from our side.
+- Decision pending: 2014 (paper text) vs 2019 (legacy code) as the pipeline's
+  official in-sample rule; both computed.
