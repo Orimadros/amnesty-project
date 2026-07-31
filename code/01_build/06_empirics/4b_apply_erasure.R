@@ -28,11 +28,21 @@ ensure_dir <- function(p) {
 
 emp_dir <- here("data", "intermediate", "empirics")
 tile_dir <- here("data", "intermediate", "mapbiomas", "transitions_combined")
-out_dir <- file.path(emp_dir, "erasure")
+# Which decision set to measure. Default is the 2004-rule, legacy-faithful set from
+# stage 16; EMP_DECISIONS=conflict_decisions_2014.csv reverts to stage 4's. The
+# erased-region cache and the adjustment table are namespaced by the choice, so the
+# two bases can coexist without one silently overwriting the other -- the mixing that
+# difference L4 was about.
+dec_name <- Sys.getenv("EMP_DECISIONS", unset = "conflict_decisions_2004rules.csv")
+basis <- sub("^conflict_decisions_", "", sub("\\.csv$", "", dec_name))
+out_dir <- file.path(emp_dir, paste0("erasure_", basis))
 ensure_dir(out_dir)
 
-dec_f <- file.path(emp_dir, "conflict_decisions_2014.csv")
-if (!file.exists(dec_f)) stop("Missing ", dec_f, " -- run 4_conflict_resolution.R first.")
+dec_f <- file.path(emp_dir, dec_name)
+if (!file.exists(dec_f)) {
+  stop("Missing ", dec_f, " -- run the matching conflict-resolution stage first.")
+}
+message("decision basis: ", basis)
 
 dec <- fread(dec_f)
 if (!"other_id" %in% names(dec)) {
@@ -137,8 +147,11 @@ adj[, er_defo_ha := er_defo_px * 0.09]
 adj <- merge(adj, as.data.table(st_drop_geometry(erased_sf))[, .(car_id, erased_ha)],
              by = "car_id", all.x = TRUE)
 
+adj_f <- file.path(emp_dir, paste0("erasure_adjustment_", basis, ".csv"))
+fwrite(adj, adj_f)
+# Stage 2 reads the un-suffixed name; point it at whichever basis just ran.
 fwrite(adj, file.path(emp_dir, "erasure_adjustment.csv"))
-message("Wrote: ", file.path(emp_dir, "erasure_adjustment.csv"))
+message("Wrote: ", adj_f, " (and erasure_adjustment.csv for stage 2)")
 cat("\nparcels adjusted:", uniqueN(adj$car_id), "\n")
 cat("mean erased area (ha):", round(mean(erased_sf$erased_ha, na.rm = TRUE), 1), "\n")
 print(adj[year %in% c(2004, 2008, 2014),
