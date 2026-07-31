@@ -1,6 +1,6 @@
 # Checkpoint 20260729b — empirics replication: where it stands, what to do next
 
-> **RESOLVED 2026-07-30.** The "DO THIS FIRST" test was run (`code/01_build/06_empirics/5_muni_straddle_test.R`): dropping the 7,704 in-sample parcels that geometrically straddle a municipality boundary moves the ineligible mean rate 23.5% -> 23.0% (23.2% under a 1%-of-area threshold). It does NOT fall toward 11.4%. Per the protocol below, the search is closed: the remaining explanation is the paper's own arithmetic. See the 2026-07-30 RESULT section of `docs/notes/code_diff_vs_legacy.md`.
+> **RESOLVED 2026-07-30.** The "DO THIS FIRST" test was run (`code/01_build/06_empirics/5_muni_straddle_test.R`): dropping the 7,704 in-sample parcels that geometrically straddle a municipality boundary moves the ineligible mean rate 23.5% -> 23.0% (23.2% under a 1%-of-area threshold). It does NOT fall toward 11.4%. Per the protocol below, that search closed — but a same-day full paper+legacy sweep then SOLVED the discrepancy: the paper's rates are pre-2009 AVERAGES and legacy's sample filter runs on the 2019 raster, not 2014. See `docs/notes/paper_legacy_method_diffs.md` (F1/F2 confirmed; never-eligible now reproduces).
 
 
 Handoff so a new chat can continue. Point the new session here:

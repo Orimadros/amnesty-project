@@ -252,3 +252,13 @@ Every identified legacy sample filter is now implemented, tested, or eliminated.
 recommendation above stands, now with the search exhausted: the paper's 11.4% does
 not follow from its own row (implied ~40%), and no coded filter reproduces it. Ask
 the authors (checkpoint 20260729b, "Questions for the authors", Q1).
+
+---
+
+# SUPERSEDED IN PART (2026-07-30): see docs/notes/paper_legacy_method_diffs.md
+
+The "Table 1's ineligible column does not reconcile with itself" argument above
+compared the stated rate (a pre-2009 AVERAGE, per Table 2's notes) against
+2008-level totals — periods differ, so the check was invalid. The full 2026-07-30
+sweep found the rates benchmark (F1), the 2019-vs-2014 sample raster (F2), and the
+reserve-specific cleaning (F3). The muni-straddle elimination above still stands.
