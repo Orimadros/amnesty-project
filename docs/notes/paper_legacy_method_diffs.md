@@ -409,3 +409,95 @@ R these are DESCENDING sequences, so after the correct `1:100000`:
 Next implementation step if desired: a legacy-faithful stage-4 mode (2004 rules,
 NA-pair drops, direction gate, containment erase) re-run on the 2019-rule sample,
 then stage 2 consuming parcels_resolved for the Table 1 summary.
+
+---
+
+# RE-AUDIT OF THE ELIGIBLE CHAIN (2026-07-31, second pass): every line re-traced
+
+Requested check of earlier assumptions. New findings P1-P3, verified-inert checks
+P4-P9, and confirmations. Each: function / measured output / paper status.
+
+## P1 (CONFIRMED, large for ineligible) — the :1704 filter is on the 2005 legacy-forest area
+
+`inelegible$area` is created ONLY in the 2005 file's block; the year 2006-2014
+join blocks never recreate it (their `data` has no `area` column, so no suffix
+clash — the 2005 column survives). Therefore `filter(!is.na(area) & area < 1e5)`:
+- uses the **2005** legacy-forest area (`defo_2005/(rate_2005/100)`), and
+- excludes every ineligible parcel with **zero 2005 deforestation** (0/0 = NaN ->
+  NA via the `mutate_all` line) — i.e. all post-2005 entrants, measured on the
+  cleaned geometry.
+Our stage 2 port used the 2008 values. Faithful recompute
+(`11_lf2005_filter_test.R`, F1+F2+drops basis): the filter drops 12,094 in-sample
+ineligible parcels (2008 basis: 7,586); **ineligible N = 14,909 vs paper 15,254
+(-2.3%)**. Side effects: the pre-2009 average rate RISES to 16.3 (zero-rate rows
+leave), the **2005 yearly mean is 11.8 vs the paper's 11.4 (+3.5%)**, and mean
+area moves to 868.8 (away from 661). Paper: the filter is documented nowhere.
+
+This reopens the F1 question of what "average prior to 2009" means operationally:
+on the faithful sample our 2005-only mean reproduces 11.4 almost exactly, while
+the 2005-2008 average does not. Candidate resolution: legacy's Table 1 rate may
+be the 2005 (panel-start) value, or the N1-faithful cleaning further lowers
+2006-2008. Undecidable without the N1 re-run.
+
+## P2 (re-confirmed, direction now precise) — D6, control areas not erased from glebas
+
+Legacy keeps `glebas_alt` intact (:76-77; the erase at :96 is commented). Our
+build erases control from target. Consequence beyond what D6 recorded: a parcel
+with <1% control overlap whose gleba overlap lies mostly INSIDE a gleba∩control
+region is target for legacy but can fall below 1% for us and land in NO pool.
+Direction: shrinks our pool (opposite of the surplus); composition-relevant.
+Paper: Appendix flow says nothing about the erasure either way.
+
+## P3 — legacy runs all layer intersections without st_make_valid
+
+The CNFP/biome intersections (:71-77) and the overlap scorings run on unrepaired
+geometries under GEOS-lenient planar mode; we st_make_valid everything. Function:
+sliver/self-intersection tolerance. Output: unmeasurable from our side (their
+GEOS version decided which features survived); expected small. Paper: n/a.
+
+## Checks that came back INERT (assumptions verified)
+
+- **P4 — NUM_ARE fallback**: our build substitutes geometric area when declared
+  NUM_AREA is missing/<=0; measured: **0 of 177,248** pool parcels affected.
+- **P5 — CNFP attribute normalization**: raw values are unaccented uppercase
+  (`governo` in {FEDERAL, ESTADUAL, ...}, `protecao` = "SEM DESTINACAO"), so
+  legacy's raw filters == our normalized ones, including exact-match `governo ==
+  "FEDERAL"` excluding FEDERAL/ESTADUAL mixes on both sides.
+- **P6 — already_treated (SNCI)**: built at :339 and never consumed downstream in
+  2_empirics.R — SNCI-titled parcels are NOT excluded from any pool. Ours neither.
+- **P7 — combine chunking off-by-one** (:277, 101-row chunks): duplicates are
+  removed by the :355 COD_IMOVEL dedup. Inert.
+- **P8 — hardcoded break ranges** (:279-303, `breaks[1:1000]`...`[4001:4398]`):
+  fitted to their vintage's row counts; would truncate on different data. Not
+  verifiable from our side; flagged as vintage risk only.
+- **P9 — ccar_dirty round-trips through a Dropbox shapefile** (:516): the version
+  measured downstream is whatever ccar_dirty.shp held at run time; if stale, even
+  the N5-buggy scoring wouldn't describe it. Vintage risk, unverifiable.
+
+## Confirmations from the verbatim re-read
+
+- inGleba2 (:673-712) drops the 2019 columns before writing, so the cleaning
+  block's `dfrst__`/`dfrstt_` are definitively the 2004 measurements (N1 stands).
+- The eligible pool gets NO area/lf filter analogous to :1704 (only ineligible).
+- Panel base year is the 2005 file (alphabetical file order), n==1 filters as
+  documented; `NaN -> NA` conversion matches our NA semantics.
+- STEP-1's rate denominator (`layer != 0`) equals our valid_px (classes 1/2/3);
+  NA pixels drop out of both.
+- Zero-valid-pixel parcels: rate NaN -> excluded by `> 10` in legacy; NA ->
+  excluded by our in-sample rule. Same.
+
+## Updated standing accounting
+
+| | ours (best faithful) | paper | error |
+|---|---|---|---|
+| eligible N | 82,787 | 71,171 | +16.3% |
+| eligible pre-2009 rate | 53.3 | 58.4 | -8.7% |
+| ineligible N | **14,909** | 15,254 | **-2.3%** |
+| ineligible 2005 rate / pre-2009 avg | **11.8** / 16.3 | 11.4 | **+3.5%** / +43% |
+| ineligible totals 2008/2014 | 3.91 / 4.36 | 4.1 / 4.7 | -4.6% / -7.2% |
+| never-eligible (F3 basis) | closed | — | <=6% |
+
+Eligible-side residual candidates, in order: N5 (their missing 100k-150k row band
+— position-based, irreproducible), N1 re-run (2004-based drop composition), P2/D6
+pool-membership fringe. The ineligible column is now effectively reproduced in N,
+totals, and the 2005 rate; only the "average prior to 2009" reading is unsettled.
