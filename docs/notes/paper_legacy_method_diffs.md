@@ -615,3 +615,89 @@ interpretable, but the level is not a baseline.
 Caveats unchanged: SEs are hand-rolled CR1 on 9 clusters; the conflict drops come
 from the 2004-rule cleaning whose erasure set was not re-measured for the rate panel;
 random draws are distribution-equivalent only.
+
+---
+
+# RESULT (2026-08-01): the ineligible bracket, and three new DiD-path findings
+
+## The conflict-semantics grid (`14_conflict_variants.R`)
+
+Pair measurements cached once (41,707 pairs, `conflict_pair_defo_2004.csv`); the set
+logic then replayed under 2x2x2 semantics x 3 seeds. Counts below already carry P1,
+so they compare directly against Table 1's 15,254 (and Table 2's implied ~16,134).
+
+| require_j_alive | winner_vanishes | drop_unevaluable | eligible | ineligible |
+|---|---|---|---|---|
+| FALSE | FALSE | FALSE/TRUE | 83,470 | **14,471** |
+| TRUE | FALSE | FALSE/TRUE | 83,554 | **14,488** |
+| FALSE | TRUE | FALSE | 78,902 | 13,564 |
+| TRUE | TRUE | FALSE | 78,297 | 13,390 |
+| FALSE | TRUE | TRUE | 78,474 | 12,576 |
+| TRUE | TRUE | TRUE | 77,869 | 12,402 |
+| paper | | | 71,171 | 15,254 (Table 2 implies ~16,134) |
+
+Findings:
+- **`require_j_alive` is inert** (+/-20 parcels). My stage-12 deviation was real but
+  NOT the cause of the overshoot — hypothesis falsified, as measured.
+- **`winner_vanishes` is the dominant lever**: ~1,000 ineligible and ~4,600 eligible
+  parcels. `drop_unevaluable` costs another ~1,000 ineligible, but only when
+  winner_vanishes is on.
+- **Seed variation is negligible** (+/-20), so the random rules are not the story.
+- **No combination reaches the target window.** The ceiling is 14,488 ineligible,
+  still -5% vs Table 1 and -10% vs Table 2's implied count.
+
+So the bracket collapses: any defensible semantics gives **14.5k-14.9k ineligible**
+(the 2014-rule variant's 14,909 sits in the same band), i.e. **-2% to -5%** vs
+Table 1 — not the -21% we reported from stage 12, which was the most aggressive
+corner of this grid. **The remaining gap is not in the resolution semantics**; it is
+upstream (pool composition / vintage).
+
+Tension worth stating: no single setting fits both columns. winner_vanishes=FALSE
+fits ineligible best (14,488) but leaves eligible at 83,554 (+17%); TRUE fits
+eligible best (77,869, +9%) but drops ineligible to 12,402. A single legacy run
+cannot have produced both of the paper's columns from our pool — further evidence
+that Table 1's two columns came from different intermediates (see D-C below).
+
+## D-A (NEW) — the DiD sample drops zero-2014-deforestation parcels
+
+Legacy :2773/:2841 builds `drop_spillover`/`drop_control` = parcels whose 2014
+deforested area is exactly 0, and excludes them from the DiD panels. Applied to the
+control and ineligible groups but NOT to eligible — the asymmetry is in the code.
+Undocumented in the paper. On our sample: 384 parcels.
+
+## D-B (NEW) — the DiD outcome is WINSORIZED at 1/99, and the paper never says so
+
+Legacy :2883/:2887: `mutate(value_w = winsorize(value, c(0.01, 0.99)))` grouped by
+variable-year, written to `did1_new.dta` / `did2_new.dta`. The regressions themselves
+ran in **Stata**, on that winsorized column. A search of the manuscript for
+"winsor|trim|outlier|top-code" returns **nothing**.
+
+## D-C (NEW) — Table 1 and Table 2 are built from DIFFERENT samples and vintages
+
+The DiD blocks read a different directory (`Dropbox/amazon_working/`) with different
+prefixes (`CAR_notEligible_defo_`, `car2004_defo_`, `CAR_inReservas_defo_`) than the
+Table 1 blocks (`amazon_project/data/intermediate/`, `CAR_eligible_defo_`,
+`CAR_ineligible_defo_`, `CAR_control_defo_`). Crucially the DiD control is measured
+on **`ccar_clean_inReservas`** — the raw >1%-overlap control pool, with **no**
+active-occupation filter and **no** cleaning — whereas Table 1's control is the
+cleaned, filtered `control_final`. That is a direct structural explanation for why
+Table 2's observation count implies ~16,134 ineligible against Table 1's 15,254:
+the two tables do not describe the same sample.
+
+## DiD under the legacy options (stage 3, EMP_DROP_ZERO2014=1 EMP_WINSOR=1)
+
+| comparison | outcome | beta | se | p | paper |
+|---|---|---|---|---|---|
+| eligible vs never-elig | legacy-forest | **-1.476** | 0.749 | 0.084 | **-1.412** |
+| ineligible vs never-elig | legacy-forest | +5.429 | 1.353 | 0.004 | +4.204 |
+| eligible vs never-elig | claim | -1.189 | 0.720 | 0.137 | |
+| ineligible vs never-elig | claim | +5.757 | 1.350 | 0.003 | |
+
+The eligible coefficient now sits within **0.06 p.p.** of the paper's. Winsorizing
+moves eligible (-1.212 -> -1.476) far more than ineligible (+5.556 -> +5.429).
+
+## Bug fixed while building stage 14
+
+`data.table(key = ...)` silently treats `key` as the reserved key argument, not a
+column: the first grid run crashed and discarded 7 minutes of measurement. Column
+renamed to `pair`, and the cache is now written before any set logic runs.

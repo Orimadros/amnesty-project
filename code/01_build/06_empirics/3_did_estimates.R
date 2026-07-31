@@ -97,7 +97,34 @@ d <- d[grepl("^[A-Z]{2}$", state)]
 d[, rate_claim := fifelse(area_ha > 0, deforested_area_ha / area_ha * 100, NA_real_)]
 setnames(d, "deforestation_rate", "rate_legacyforest")
 
+# D-A (legacy 2_empirics.R:2773/2841): the DiD sample drops parcels with ZERO
+# deforested area in 2014, from the control and ineligible groups. Legacy applies it
+# to `control` and `spillover` (its name for ineligible) but NOT to `eligible`; that
+# asymmetry is reproduced here rather than tidied. Undocumented in the paper.
+if (Sys.getenv("EMP_DROP_ZERO2014", unset = "1") != "0") {
+  z <- d[year == 2014 & deforested_area_ha == 0 & class != "eligible", unique(car_id)]
+  before <- uniqueN(d$car_id)
+  d <- d[!car_id %in% z]
+  message("D-A: dropped ", length(z), " zero-2014 parcels (control+ineligible): ",
+          before, " -> ", uniqueN(d$car_id), " parcels")
+}
+
 d[, post := as.integer(year >= POST_FROM)]
+
+# D-B (legacy :2883/2887): the exported DiD outcome is WINSORIZED at 1/99 within
+# variable-year before estimation (`value_w`), and the regressions themselves ran in
+# Stata on that column. The paper never mentions winsorizing. EMP_WINSOR=0 disables.
+WINSOR <- Sys.getenv("EMP_WINSOR", unset = "1") != "0"
+if (WINSOR) {
+  wz <- function(x) {
+    q <- quantile(x, c(0.01, 0.99), na.rm = TRUE, names = FALSE)
+    pmin(pmax(x, q[1]), q[2])
+  }
+  for (v in c("rate_claim", "rate_legacyforest")) {
+    d[, (v) := wz(get(v)), by = year]
+  }
+  message("D-B: outcomes winsorized at 1/99 within year")
+}
 
 message("panel: ", nrow(d), " parcel-years | ",
         uniqueN(d$car_id), " parcels | ", uniqueN(d$state), " states")
