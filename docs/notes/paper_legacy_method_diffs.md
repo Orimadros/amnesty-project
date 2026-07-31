@@ -281,3 +281,131 @@ never-eligible column reproduces.
   slippage + microdata-vintage n==1 drops); not reproducible from our side.
 - Decision pending: 2014 (paper text) vs 2019 (legacy code) as the pipeline's
   official in-sample rule; both computed.
+
+---
+
+# THE ELIGIBLE SWEEP (2026-07-31): line-by-line, legacy 2_empirics.R:255-1340 vs our stages
+
+Requested after the F1-F3 round: a meticulous pass over every step that produces the
+paper's 71,171 eligible / 15,254 ineligible. Each finding lists function, output
+effect, and whether the paper documents it. Numbers below are measured, not argued.
+
+## N0 (OURS — the largest single unexplained gap) — drop decisions never reached Table 1
+
+Stage 4 computes 24,203 drop decisions (20,993 `drop` + 3,210 `drop_random`) and
+writes `parcels_resolved_2014.csv`; stage 3 uses it for the DiD (EMP_RESOLVED=1).
+**Stage 2's Table 1 summary never excludes them**: 23,517 in-sample parcels
+(17,585 eligible, 4,703 ineligible, 1,229 never-eligible) were counted despite
+being dropped. Legacy removes dropped parcels from the per-muni `*_cleaned_*`
+files BEFORE the eligibility tests, so its Table 1 never sees them.
+- Function: Appendix C step 3 drop rules; documented in the paper.
+- Output (`10_apply_drops_test.R`, F1+F2 basis, drops as a lower bound since they
+  were computed under the 2014 sample rule): eligible N 100,185 -> **82,787**
+  (paper 71,171; error +41% -> +16%); ineligible N 22,892 -> **18,278** (paper
+  15,254); eligible totals 6.42/6.69 -> **5.47/5.69** Mha (paper 5.1/5.3);
+  ineligible totals -> **3.95/4.46** (paper 4.1/4.7, now slightly under).
+- The 2026-07-29 count-surplus note's "conflict resolution ruled out (29.5k max <
+  33.5k surplus)" conflated *sufficient* with *relevant* — 24.2k of real drops
+  were sitting unapplied.
+
+## N1 — the conflict rules run on 2004 deforestation, not 2014
+
+Legacy :736-738/:751-753 loads the **2004** raster for the cleaning block; the
+`>= 80%` numerators (defo in intersection) and denominators (`dfrst__`, the 2004
+deforested area recorded by the inGleba2 pass) are all 2004 quantities. Our stage
+4 evaluates the same rules with `CR_YEAR=2014`.
+- Function: decides WHICH side of a conflict is dropped/erased.
+- Output effect: large — 2004 deforestation is sparse, so many pairs flip between
+  evaluable and not (see N2), and drop targets differ. Not yet re-run; the exact
+  fix is stage 4 with 2004 inputs plus N2-N4 semantics.
+- Paper: Appendix B/C states the rules but never states the year the deforested
+  shares are measured in. The "2014" in step 1 refers to the sample filter (which
+  is itself really 2019 — F2).
+
+## N2 — legacy silently drops conflicted parcels whose pairs cannot be evaluated
+
+In legacy's per-muni cleaning, a pair row gets `drop_i = NA` when either side's
+2004 deforestation is exactly zero (string `"0"`, :826) or the intersection is a
+GEOMETRYCOLLECTION. NA rows are excluded from `overs`/`insiders_1`/`insiders_2`,
+and the final assembly (:1138) keeps only `noConflict` plus parcels appearing in
+those three sets — so a conflicted parcel whose every pair is unevaluable is
+**dropped with no rule firing at all**. Our stage 4 `next`s those pairs and keeps
+the parcels.
+- Function: none intended — it is a fall-through of the assembly filter.
+- Output (measured on our pairs + 2004 defo): among in-sample parcels with a
+  legacy-gate conflict row, ALL rows unevaluable for **2,748 ineligible**, 335
+  eligible, 196 never-eligible. The ineligible skew is mechanical: late entrants
+  have zero 2004 deforestation. Stacked on N0's 18,278 this lands at ~15,530 vs
+  the paper's 15,254 (+1.8%).
+- Paper: not documented anywhere.
+
+## N3 — containment pairs where neither side trips 80%: legacy erases, we no-op
+
+Legacy's `insiders_2` (:1076-1130) takes containment pairs with drop_i=0 and
+drop_minus_i=0 and randomly erases the intersection from one side. Our stage 4
+takes no action on that case (act stays NULL). The paper's Appendix B bullet list
+has no containment-0+0 rule either — the code invented one.
+- Output effect: geometry/area shrinkage on containment pairs (donuts when the
+  container loses), not drops. Affects measured areas and rates, magnitude untested.
+
+## N4 — pair gating is direction-specific in legacy
+
+Legacy builds a row per direction and gates on `intersect/NUM_ARE(i) > 10%` for
+each direction separately (:774-790); mirrored rows are deduped only by the
+ordered id, and the erase/delete loops deactivate the mirror with a `run` flag.
+Our stage 4 gates once per unordered pair on `> 10% of EITHER side`. Consequence:
+a parcel whose own overlap share is under 10% is untouchable in legacy (goes to
+noConflict) even when its partner's share is large; our version can still examine
+and drop it.
+- Output effect: our drop set is a superset on asymmetric pairs; magnitude folded
+  into the N1 re-run.
+
+## N5 (LEGACY BUG) — the gleba overlap scoring covers the wrong rows
+
+The target-pool scoring (:448-487) chunks `ccar_not_in_rez_valid` with slice
+bounds that are typo'd: `slice(1000001:150000)`, `slice(1500001:200000)`, ... In
+R these are DESCENDING sequences, so after the correct `1:100000`:
+- rows **100,001-149,999 are never scored** — their gleba overlap is NA -> 0 ->
+  excluded from the target pool regardless of true overlap;
+- rows >= 150,000 are covered by up to SIX overlapping chunks, and the per-parcel
+  `sum(intersect_area)` then multiplies their overlap share several-fold, letting
+  parcels with true overlap down to ~0.2% clear the ">1%" bar.
+- Function: none — it is a bug. The paper documents a 0.1% threshold (Appendix
+  B) while the code writes 1%, and the executed arithmetic delivers neither.
+- Output effect: legacy's target pool is missing a ~50k-row band (position-, not
+  property-based — the band sits inside the AC/AM/RR/AP block that leads their
+  row order) and includes an inflated low-overlap fringe. Both push their
+  eligible/ineligible pool away from ours in opposite directions; without their
+  exact row order this is irreproducible. It is plausibly a large share of the
+  remaining eligible N and rate residual.
+
+## Steps verified as matching (no difference found)
+
+- Biome combine: interior states (AC/AM/RR/AP) kept whole, others clipped —
+  matches our 05_combine_car_biome.R (their Para double-processing is neutralized
+  by the :355 dedup; our #21 regularizations don't change membership).
+- COD_IMOVEL dedup before scoring (:355 vs our slice(1)).
+- Control-first precedence; CNFP layer definitions; 1% threshold as written.
+- The 10% conflict gate against DECLARED area (NUM_ARE) on both sides.
+- The `>= 80` drop cutoffs and the containment cutoffs (>= .9), including the
+  both-contained -> "overlap" tiebreak.
+- Random draws for overlap-0+0 (erase one side) and overlap-1+1 (delete one side)
+  map to our `erase_intersection_random` / `drop_random` (distribution-equivalent
+  only; legacy is unseeded).
+- Eligible finalization: 2004 LEVEL test on cleaned geometry (S1, tested small),
+  geometric-area cap (S3, tested small: 84+37 switches), panel joins from the
+  2005 file with n==1 filters (inert on our vintage).
+
+## Standing accounting of the residual gaps (F1+F2+drops, lower-bound drops)
+
+| | ours | paper | remaining error | dominant remaining cause |
+|---|---|---|---|---|
+| eligible N | 82,787 | 71,171 | +16% | N1 re-run pending, N5 (their missing band), universe slippage |
+| eligible rate | 53.3 | 58.4 | -8.7% | composition of the above |
+| ineligible N | 18,278 (~15,530 after N2) | 15,254 | +1.8% after N2 | N1 re-run pending |
+| ineligible rate | 14.4 | 11.4 | +26% | N1/N2 change the drop composition; N5 fringe parcels (low-overlap, low-rate) sit in THEIR pool but not ours |
+| never-eligible | closed (F3) | — | <=6% everywhere | — |
+
+Next implementation step if desired: a legacy-faithful stage-4 mode (2004 rules,
+NA-pair drops, direction gate, containment erase) re-run on the 2019-rule sample,
+then stage 2 consuming parcels_resolved for the Table 1 summary.
