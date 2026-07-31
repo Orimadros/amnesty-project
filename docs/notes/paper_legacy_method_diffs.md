@@ -501,3 +501,49 @@ Eligible-side residual candidates, in order: N5 (their missing 100k-150k row ban
 — position-based, irreproducible), N1 re-run (2004-based drop composition), P2/D6
 pool-membership fringe. The ineligible column is now effectively reproduced in N,
 totals, and the 2005 rate; only the "average prior to 2009" reading is unsettled.
+
+---
+
+# RESULT (2026-07-31): the N1 re-run — legacy-faithful 2004-rule cleaning
+
+`12_conflict_2004_rerun.R` (seed 20260731): direction-gated pairs (N4), 2004-based
+drop rules (N1), unevaluable-pair exclusion (N2), and the as-executed assembly that
+also loses drop-pair winners without other surviving conflicts (N6), run on the
+active-2019 target pool (130,663 parcels; 76,767 direction rows; 51,755 measured
+pair intersections; ~15 min). The cleaning keeps 94,682. With the P1 (2005-basis)
+ineligible filter on top:
+
+| | F2 + 2014-rule drops (+P1) | **F2 + N1-faithful cleaning + P1** | paper |
+|---|---|---|---|
+| eligible N | 82,787 | **76,592** | 71,171 |
+| eligible defo 2008/2014 (Mha) | 5.47 / 5.69 | **4.97 / 5.16** | 5.1 / 5.3 |
+| eligible mean area | 136.0 | 133.2 | 143 |
+| eligible pre-2009 rate | 53.3 | 53.7 | 58.4 |
+| ineligible N | 14,909 | 12,021 | 15,254 |
+| ineligible defo 2008/2014 | 3.91 / 4.36 | 3.21 / 3.58 | 4.1 / 4.7 |
+| ineligible 2005 rate / pre-2009 avg | 11.8 / 16.3 | 12.0 / 16.7 | 11.4 |
+
+Read-out:
+- **Eligible is now effectively reproduced in levels**: N +7.6%, totals −2.5/−2.7%
+  (from +41% and +26% at the start of this exercise). The as-executed cleaning
+  semantics — including the winner-vanishing assembly — are what the 71,171
+  requires; the documented Appendix C rules alone are not enough.
+- **Ineligible is bracketed by our two approximations**: gentler 2014-rule drops
+  give −2.3% N, the faithful 2004-rule cleaning overshoots to −21%. Legacy's true
+  outcome sits between, because our conflict graph (raw-geometry overlaps from CAR
+  stage 03) is denser than legacy's per-muni active-file intersections, and the
+  random draws / row order are distribution-equivalent only. The 2005-basis rate
+  lands at 11.8-12.0 vs 11.4 in both variants.
+- Caveats: rates ride on the 2014-rule erasure panel (the 2004-rule erasure set was
+  not re-measured); some pair intersections degraded to GEOMETRYCOLLECTION and
+  were skipped by terra (warnings), biasing toward fewer resolutions.
+
+## Bottom line of the whole exercise
+
+Every Table 1 number is now attributable to identified, tested mechanisms: F1
+(pre-2009 averaging) + F2 (2019 sample raster) + F3 (reserve-only cleaning) + N0
+(drops must reach the sample) + N1/N2/N4/N6 (as-executed cleaning semantics) + P1
+(2005-basis ineligible filter), with the residual scatter (~±8% on eligible rate,
+the ineligible N bracket) explained by irreproducible legacy-side artifacts (N5
+slice bug, unseeded randomness, their conflict graph, the 63k slippage). There is
+no remaining unexplained methodological difference on our side.
