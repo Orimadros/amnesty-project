@@ -701,3 +701,67 @@ moves eligible (-1.212 -> -1.476) far more than ineligible (+5.556 -> +5.429).
 `data.table(key = ...)` silently treats `key` as the reserved key argument, not a
 column: the first grid run crashed and discarded 7 minutes of measurement. Column
 renamed to `pair`, and the cache is now written before any set logic runs.
+
+---
+
+# LIVE-DIFFERENCE REGISTER (2026-08-01): our CURRENT code vs legacy, line by line
+
+Earlier audits compared legacy against OUR CODE AS IT WAS. The pipeline has since
+changed (stages 2/3 consolidated, 13 added), so this is a fresh pass over what is on
+disk now. Each entry: what differs, measured size, and whether it is deliberate.
+
+## Still unaligned, deliberate (paper text over legacy code)
+
+- **L1 (S1) — occupation test.** `2_eligibility_split.R:118` uses first-crossing
+  (`deforestation_rate >= 10` in ANY year <= 2004). Legacy :1209/:1290 uses the 2004
+  LEVEL (`> 10` on the 2004 raster). We follow the paper's "when occupation first
+  began" (2.3). Measured: 3,892 parcels move eligible -> ineligible.
+- **L2 (S3) — area cap.** `:134` tests DECLARED `area_ha <= 1500`; legacy tests
+  GEOMETRIC `st_area()/1e4 <= 1500` (:1231/:1315). Both also cap 2004 deforested
+  area. Measured: 84 eligible -> ineligible, 37 the other way.
+
+## Still unaligned, not deliberate — fix candidates
+
+- **L3 (S4) — boundary operator.** Ours: `>= 10` for the occupation test and the
+  2014 in-sample flag (`:118`, `:151`, `:183`); legacy is strict `> 10` everywhere.
+  The 2019 flag (`:158`) is already strict. Measured: **53 parcels** sit at exactly
+  10.000 in 2014. Free to align.
+- **L4 — MIXED CLEANING BASES inside stage 2 (new, ours).** The rate/area erasure
+  comes from `erasure_adjustment.csv`, produced by stage 4/4b under the **2014-rule**
+  decisions, while the DROPS come from `parcels_resolved_2004rules.csv`, produced by
+  stage 12 under the **2004-rule** semantics. So a parcel can be shrunk by one run's
+  erase decision and kept/dropped by another's. Internally inconsistent; the clean
+  fix is to re-run 4b off the 2004-rule decision set.
+- **L5 (D-C) — DiD control pool.** Stage 3 gives the control group the Table-1
+  treatment (occupation filter + reserve cleaning). Legacy's DiD control is
+  `ccar_clean_inReservas`: the raw >1%-overlap pool, **no occupation filter, no
+  cleaning**. Our stage 3 is therefore comparable to Table 1's sample but NOT to
+  Table 2's, which is what the coefficients are benchmarked against.
+- **L6 — production stage 4 vs the faithful semantics.** `4_conflict_resolution.R`
+  still evaluates the rules on 2014 deforestation (N1), skips pairs whose members are
+  already dropped (C3), and no-ops on containment-0+0 (N3). Stages 12/14 hold the
+  faithful versions; stage 4 has not been retired or updated.
+
+## Verified equivalent on this pass (no action)
+
+- Raster extraction: `terra::extract` with default `touches = FALSE` (cell-centre) on
+  both sides; `valid_px = val != 0` with NA excluded matches legacy's
+  `filter(layer != 0)` (dplyr drops NA). Legacy reads one national mosaic per year
+  (`f[1]`); we sum exact, non-overlapping 1-degree tiles -- equivalent.
+- Reserve cleaning (stage 13 helper) vs legacy :1858-1955: same >10%-of-declared
+  gate, same erase-from-larger-by-NUM_ARE direction in both branches, same sequential
+  mutation of the working layer, same GEOMETRYCOLLECTION/LINESTRING handling.
+- `_helpers_twfe.R`: CR1 correction `(G/(G-1))*((N-1)/(N-K))` and `df = G-1` match
+  Stata's cluster default. The paper's columns (2)-(3) use year-by-state and
+  year-by-municipality FE, which we do not estimate -- not a baseline difference.
+- Class precedence (control first), CNFP layer filters, the 1% pool threshold as
+  written, dedup-by-id before scoring, panel base year 2005, NaN -> NA semantics.
+
+## Being measured now (stage 15)
+
+**L7 (S2 + P2/D6) — pool membership.** Legacy divides the pool-overlap by GEOMETRIC
+parcel area and scores against the UN-ERASED gleba layer; we use DECLARED area and
+erase control from target. The earlier S2 test could only see parcels already in one
+of our layers, so flips INTO a pool were invisible -- exactly the direction the
+semantics grid says the residual must live in. `15_pool_membership_test.R` scores
+every CAR in the biome under all four combinations.
