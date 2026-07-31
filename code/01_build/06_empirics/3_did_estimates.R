@@ -10,17 +10,25 @@
 #   did1: eligible   vs never-eligible  -> paper reports beta ~ -1.4 p.p.
 #   did2: ineligible vs never-eligible  -> paper reports beta = +4.2 p.p.
 #
-# Outcome. Table 1's note defines the deforestation rate as "the share of a
-# property claim's area that has been deforested", with claim area as declared by
-# the occupant. So the primary outcome is deforested_ha / area_ha * 100. We also
-# report the legacy-forest denominator as a robustness check, since Appendix C uses
-# that denominator for the occupation test and the two are not interchangeable.
+# Outcome. Table 1's note defines the rate as "the share of a property claim's area
+# that has been deforested" (claim area as declared), but the code that produced the
+# table computes deforested pixels / non-zero pixels -- the LEGACY-FOREST denominator
+# -- and that is what our Table 1 reproduction matches. rate_legacyforest is
+# therefore the primary outcome here; rate_claim is reported beside it.
 #
-# NOTE: the paper states (§2.3) that its results "carry if we used property
-# boundaries without any adjustment", i.e. without the spatial conflict-resolution
-# stage. This script runs on unresolved boundaries, so LEVELS are known to run high
-# (~+39%/+44% on counts, see docs/notes/table1_comparison_findings.md). The point of
-# this stage is the SIGN and rough MAGNITUDE of beta, not the levels.
+# rate_claim is also not summarisable as a mean: declared areas include 256 eligible
+# parcels under 1 ha, so the ratio has a tail reaching ~10^8 percent (median 50.8,
+# p99 102.4, mean 1325). Its beta is still meaningful -- the FE estimator differences
+# within parcel -- but read its pre_mean_treated column as junk, not as a baseline.
+#
+# Sample basis. As of 2026-07-31 this runs on stage 2's `final_sample`, which carries
+# the full set of replication findings (docs/notes/paper_legacy_method_diffs.md):
+# F2 (the "ever occupied" filter as legacy ran it, on the 2019 raster), P1 (the
+# ineligible filter on the 2005 legacy-forest area), N0/N1 (the conflict algorithm's
+# drop decisions, evaluated with 2004 deforestation), and F3 (the control pool
+# measured on legacy's reserve-cleaned geometry). Set EMP_RESOLVED=0 to estimate
+# without the cleaning drops -- the paper claims in §2.3 that results carry either
+# way, and that claim is worth testing directly.
 
 library(data.table)
 library(here)
@@ -48,25 +56,39 @@ if (length(absent) > 0) {
 }
 
 # ---- panel -------------------------------------------------------------------
-elig <- fread(elig_f, select = c("car_id", "class", "in_sample"))
-elig <- elig[in_sample == TRUE, .(car_id, class)]
-
-# If the conflict-resolution stage has run, restrict to the parcels it kept. Set
-# EMP_RESOLVED=0 to estimate on unresolved boundaries instead (the paper states in
-# 2.3 that its results carry either way, so both are worth reporting).
-resolved_f <- file.path(emp_dir, "parcels_resolved_2014.csv")
-use_resolved <- Sys.getenv("EMP_RESOLVED", unset = "1") != "0" && file.exists(resolved_f)
-if (use_resolved) {
-  keep_ids <- fread(resolved_f, select = "car_id")$car_id
-  before <- nrow(elig)
-  elig <- elig[car_id %in% keep_ids]
-  message("using CONFLICT-RESOLVED parcels: ", before, " -> ", nrow(elig))
-} else {
-  message("using UNRESOLVED boundaries: ", nrow(elig), " parcels")
-}
+# Stage 2 now writes `final_sample`: the 2019-basis "ever occupied" filter (F2), the
+# 2005-basis ineligible filter (P1), and the conflict algorithm's drop decisions
+# (N0/N1). EMP_RESOLVED=0 falls back to `basis_sample` -- the same sample with the
+# cleaning drops NOT applied; the paper claims in 2.3 that results carry either way.
+ecols <- names(fread(elig_f, nrows = 0))
+want <- intersect(c("car_id", "class", "in_sample", "basis_sample", "final_sample"), ecols)
+elig <- fread(elig_f, select = want)
+use_resolved <- Sys.getenv("EMP_RESOLVED", unset = "1") != "0"
+sample_col <- if (use_resolved && "final_sample" %in% want) "final_sample" else
+              if ("basis_sample" %in% want) "basis_sample" else "in_sample"
+elig <- elig[get(sample_col) == TRUE, .(car_id, class)]
+message("sample column: ", sample_col, " -> ", nrow(elig), " parcels")
 
 d <- rbindlist(lapply(files, fread))
 d <- merge(d, elig, by = "car_id")
+
+# F3: legacy measures the control pool on reserve-cleaned geometry. Swap in that
+# panel for the never-eligible parcels across the WHOLE window -- cleaned geometry
+# pre-2009 with uncleaned post-2009 would manufacture a break at the treatment date.
+ctl_panel <- file.path(emp_dir, "control_cleaned_panel_full.csv")
+if (file.exists(ctl_panel)) {
+  cp <- fread(ctl_panel)[year %in% DID_YEARS &
+                         car_id %in% elig[class == "never_eligible", car_id]]
+  cp <- cp[, .(car_id, year, deforested_area_ha,
+               deforestation_rate = rate_legacyforest,
+               area_ha = declared_ha, class = "never_eligible")]
+  before <- uniqueN(d[class == "never_eligible", car_id])
+  d <- rbind(d[class != "never_eligible"], cp, fill = TRUE)
+  message("control outcomes from the reserve-cleaned panel (F3): ",
+          before, " -> ", uniqueN(cp$car_id), " parcels")
+} else {
+  message("NOTE: no reserve-cleaned control panel -- control on uncleaned geometry")
+}
 
 # State is the CAR id prefix (e.g. "MT-5101704-0244..."), so no extra join needed.
 d[, state := substr(car_id, 1, 2)]

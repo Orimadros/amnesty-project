@@ -547,3 +547,71 @@ Every Table 1 number is now attributable to identified, tested mechanisms: F1
 the ineligible N bracket) explained by irreproducible legacy-side artifacts (N5
 slice bug, unseeded randomness, their conflict graph, the 63k slippage). There is
 no remaining unexplained methodological difference on our side.
+
+---
+
+# CONSOLIDATED (2026-07-31): the stack is now stage 2 + stage 3, and the DiD is re-run
+
+Stages 6-12 were diagnostics. The findings they established now live in the pipeline:
+
+- **stage 13** (`13_control_cleaned_panel.R`, new): the never-eligible panel measured
+  on legacy's reserve-cleaned geometry (F3) for all DiD years 2005-2014, geometry
+  cached. Supersedes stage 8, which only covered 2005-2008 + 2014 — the DiD needs one
+  geometry basis across the window or the cleaning itself would look like a 2009 break.
+  Cleaning logic factored into `_helpers_reserve_clean.R`.
+- **stage 2**: writes three nested sample columns — `in_sample` (paper's stated 2014
+  rule + 2008-basis filter; retained because stages 4/4b consume it), `basis_sample`
+  (EMP_SAMPLE_YEAR, default 2019 = as legacy ran it, F2, + the 2005-basis filter P1),
+  and `final_sample` (basis minus the conflict drops, N0/N1). Table 1 now reports
+  pre-2009 average rates (F1) with 2005-only and 2008-only beside them, and the
+  control column's rates AND totals from the F3 panel.
+- **stage 3**: consumes `final_sample` and swaps the F3 panel in for the control
+  group's outcomes. EMP_RESOLVED=0 falls back to `basis_sample` (no cleaning drops).
+
+## Bug found while consolidating (ours, pre-existing)
+
+Stage 2's erasure block merged `erased_ha` on (car_id, year) AND on car_id; the
+`suffixes = c("", ".y")` left the per-YEAR copy in force. Every year present in
+`erasure_adjustment.csv` (1987-2014) had its area shrunk, but a year outside it did
+not — invisible until 2019 entered the reshape, at which point 12,401 parcels carried
+two different `area_ha` values, split into two dcast rows, lost their outcome columns,
+and 7,268 of them silently flipped eligible -> ineligible. Fixed by taking only the
+pixel columns from the per-year merge; the sample-year flags now come straight from
+the long panel so the reshape can never be perturbed again.
+
+## Table 1, consolidated run
+
+| | ours | paper | error |
+|---|---|---|---|
+| eligible N / defo08 / defo14 | 76,592 / 4.972 / 5.156 | 71,171 / 5.1 / 5.3 | +8% / -3% / -3% |
+| eligible rate pre-2009 (2005 / 2008) | 53.7 (51.1 / 56.1) | 58.4 | -8% |
+| ineligible N / defo08 / defo14 | 12,021 / 3.209 / 3.580 | 15,254 / 4.1 / 4.7 | -21% / -22% / -24% |
+| ineligible rate pre-2009 (2005 / 2008) | 16.7 (**12.0** / 21.1) | 11.4 | +46% (**+5%** on 2005) |
+| never-elig N / defo08 / defo14 | 6,855 / **2.003** / **2.189** | 7,049 / 2.0 / 2.2 | -3% / **+0%** / **-1%** |
+| never-elig rate pre-2009 | 36.3 | 35.7 | +2% |
+
+## DiD, re-run on `final_sample` (stage 3, 954,680 parcel-years, 9 state clusters)
+
+| comparison | outcome | beta (p.p.) | se | p | pre-mean |
+|---|---|---|---|---|---|
+| eligible vs never-elig | legacy-forest | **-1.212** | 0.742 | 0.141 | 53.53 |
+| ineligible vs never-elig | legacy-forest | **+5.556** | 1.310 | 0.003 | 16.74 |
+| eligible vs never-elig | claim area | -1.075 | 0.962 | 0.296 | (junk, see below) |
+| ineligible vs never-elig | claim area | +5.283 | 1.414 | 0.006 | 20.54 |
+| **paper** | | **-1.412** / **+4.204** | 0.558 / 0.886 | | 58.4 / 11.4 |
+
+Both signs match and both magnitudes are far closer than the pre-sweep estimates
+(-1.742 / +9.502 at checkpoint-20260729b): the eligible coefficient is now within
+0.2 p.p. of the paper's and the ineligible within 1.4 p.p. The legacy-forest
+outcome is primary — it is what legacy's code computes and what our Table 1
+reproduces; its pre-means (53.5, 16.7) are also the ones comparable to the paper's
+58.4 / 11.4 baselines.
+
+**Do not read `rate_claim`'s pre_mean_treated**: declared areas include 256 eligible
+parcels under 1 ha, giving that ratio a tail to ~10^8 percent (median 50.8, p99
+102.4, mean 1325). The FE estimator differences within parcel so its beta is still
+interpretable, but the level is not a baseline.
+
+Caveats unchanged: SEs are hand-rolled CR1 on 9 clusters; the conflict drops come
+from the 2004-rule cleaning whose erasure set was not re-measured for the rate panel;
+random draws are distribution-equivalent only.
