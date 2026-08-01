@@ -1025,3 +1025,41 @@ i3geomap vs SHP_2013), so the pool is a different object. We hold SHP_2013 only.
 **Conclusion:** there is no hidden table-making script. The remaining count gaps cannot
 be closed from this repository, because the inputs (their CNFP vintage, their row
 order, their Stata do-file) are not in it.
+
+---
+
+# RESULT (2026-08-01): the 2017 sample basis — tested and REJECTED
+
+Legacy's step 1 reads the 2019 raster with the comment "change to 2017". Full faithful
+cycle run on the 2017 pool (stage 2 -> 4 -> 4b -> 2 -> 3; pool 127,760, kept 94,163):
+
+| statistic | 2019 basis | 2017 basis | paper |
+|---|---|---|---|
+| eligible N / defo08 / rate | 77,300 (+9%) / 4.988 (-2%) / 53.8 (-8%) | 77,251 (+9%) / 4.996 (-2%) / 53.9 (-8%) | 71,171 / 5.1 / 58.4 |
+| **ineligible N** | 18,225 (+19%) | **16,912 (+11%)** | 15,254 |
+| ineligible defo08 | 3.678 (-10%) | 3.734 (-9%) | 4.1 |
+| **ineligible rate** | **12.0 (+5%)** | 12.9 (+13%) | 11.4 |
+| **ineligible mean area** | **673 (+2%)** | 725 (+10%) | 661 |
+| never-elig N | 6,855 (-3%) | 6,417 (-9%) | 7,049 |
+| never-elig rate | 36.3 (+2%) | 38.5 (+8%) | 35.7 |
+| DiD eligible / ineligible | -1.426 / +5.485 | -1.641 / +5.604 | -1.412 / +4.204 |
+
+**Verdict: keep 2019.** 2017 buys one improvement (ineligible N +19% -> +11%) and pays
+for it everywhere else -- the ineligible rate and mean area both degrade, the whole
+never-eligible column degrades (N -3% -> -9%, rate +2% -> +8%), and the eligible
+column is unchanged. The DiD eligible coefficient also moves away (-1.641 vs -1.412).
+Since 2019 is what the code actually READS -- 2017 exists only as a comment -- the
+code-over-paper rule and the evidence agree.
+
+Curiosity worth noting: on the 2017 basis the never-eligible 2005 rate is 35.7,
+exactly the paper's figure. That is almost certainly coincidence given every other
+number in that column got worse, but it is recorded in case it recurs.
+
+## Integrity note
+
+Two chains overlapped on the same files (a background wait-loop I believed dead was
+still live). Verified before reporting: re-running stage 2 from the on-disk artifacts
+reproduced the chain output byte-identically, so the state was coherent -- the
+commands are deterministic and seeded, so the duplicate run recomputed the same
+values. The 2019 artifacts were restored from backups afterwards and re-verified
+against the earlier 2019 run, again byte-identical.
