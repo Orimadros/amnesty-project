@@ -69,13 +69,16 @@ sample_col <- if (use_resolved && "final_sample" %in% want) "final_sample" else
 elig <- elig[get(sample_col) == TRUE, .(car_id, class)]
 message("sample column: ", sample_col, " -> ", nrow(elig), " parcels")
 
-# L5 / D-C: Table 1 and Table 2 do NOT share a sample. Legacy's DiD control is
-# `ccar_clean_inReservas` (2_empirics.R:1811-1813, measured at :2701-2718) -- the raw
-# >1%-overlap reserve pool, with NO occupation filter and NO cleaning -- while
-# Table 1's control is the filtered, reserve-cleaned `control_final`. Under the
-# code-over-paper rule the DiD should use the raw pool, so that is the default here;
-# EMP_RAW_CONTROL=0 reverts to the Table-1-style control.
-RAW_CONTROL <- Sys.getenv("EMP_RAW_CONTROL", unset = "1") != "0"
+# L5 / D-C: legacy has a block (2_empirics.R:2701-2718) that measures the DiD control
+# on `ccar_clean_inReservas` -- the raw >1%-overlap reserve pool, no occupation
+# filter, no cleaning -- rather than Table 1's filtered `control_final`. TESTED
+# 2026-08-01 and REJECTED as the path that produced Table 2: with the raw pool the
+# eligible coefficient goes to +0.103 (sign flipped, paper -1.412) and ineligible to
+# +7.076 (paper +4.204), whereas the filtered control reproduces -1.400 vs -1.412.
+# That block sits in the superseded `amazon_working/` vintage (different file
+# prefixes), so it is scratch, not the published path. Default OFF; EMP_RAW_CONTROL=1
+# reruns the rejected variant.
+RAW_CONTROL <- Sys.getenv("EMP_RAW_CONTROL", unset = "0") != "0"
 if (RAW_CONTROL) {
   all_ctl <- fread(elig_f, select = c("car_id", "class"))[class == "never_eligible"]
   before <- nrow(elig[class == "never_eligible"])

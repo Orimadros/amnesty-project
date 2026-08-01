@@ -860,3 +860,69 @@ L4 is closed. Still open, in the plan's order: L6 (retire stage 4 / production
 semantics), L5 (give the DiD legacy's raw uncleaned control pool), L1/L2/L3 (2004
 level occupation test, geometric area cap, strict `>`). The ineligible N at -18% is
 still the aggressive corner of the semantics grid; the band remains 14.5k-14.9k.
+
+---
+
+# RESULT (2026-08-01): L6 done, L5 REJECTED, O1 done — and the ineligible N is ambiguous
+
+## L6 — stage 4 is now the faithful implementation
+
+Rewritten with the as-executed semantics; stages 14/16 retired into it (the
+Appendix-C-prose version remains at git 1e68c9b). Every code-vs-paper choice is an
+env switch. Table 1 held its gains: eligible totals within 1-2%, never-eligible
+still exact, ineligible 2005 rate 11.9-12.1 vs 11.4.
+
+## L5 — REJECTED by measurement
+
+Legacy has a block (:2701-2718) measuring the DiD control on `ccar_clean_inReservas`,
+the raw >1%-overlap reserve pool (no occupation filter, no cleaning). Implemented and
+run:
+
+| comparison | filtered control | RAW control | paper |
+|---|---|---|---|
+| eligible | **-1.400** | **+0.103** | -1.412 |
+| ineligible | +5.614 | +7.076 | +4.204 |
+
+The raw pool flips the eligible coefficient's sign. The published Table 2 therefore
+did NOT come from that path -- consistent with it living in the superseded
+`amazon_working/` vintage. Default reverted to the filtered control;
+`EMP_RAW_CONTROL=1` reruns the rejected variant.
+
+**Limit of the code-over-paper rule:** when the code contains two conflicting paths,
+the tiebreaker has to be which one reproduces the published numbers.
+
+## O1 — the ineligible filter was applied too early (fixed, faithful, but not the fix)
+
+Legacy's `filter(!is.na(area) & area < 1e5)` is at :1704, in the PANEL stage, after
+cleaning. Ours was inside `basis_sample`, which stage 4 used to build the conflict
+pool -- withholding ~11.9k ineligible parcels from the graph. Corrected (stage 4 now
+defaults to the pre-filter `in_sample_2019`; `CR_POOL_PRE_P1=0` restores the old
+order).
+
+Effect: the conflict pool grows 118,740 -> 130,663 and ineligible SURVIVORS jump
+12,473 -> **18,192**, but P1 then removes 6,072 of them, so the final count moves
+12,429 -> 12,120 (-21% vs Table 1). Correct ordering; not the missing piece.
+
+## The ineligible N is ambiguous in the source, and that reframes the "gap"
+
+`length(unique(...))` appears in legacy exactly once (:1341), for the eligible-side
+comparison table. **No count of the ineligible or never-eligible group is computed
+anywhere in the script** -- Table 1's 15,254 and 7,049 were produced ad hoc, off
+script, so we cannot know whether they were taken BEFORE or AFTER the :1704 filter.
+The two readings bracket the paper's number:
+
+| our ineligible count | vs paper 15,254 |
+|---|---|
+| pre-P1 (the `car_inelegible` geometry set) | 18,192 (**+19%**) |
+| post-P1 (the panel actually used for rates) | 12,120 (**-21%**) |
+| Table 2's implied count | ~16,134 — **between the two** |
+
+Note the pre-P1 reading puts ineligible at +19% next to eligible's +9%, i.e. the same
+direction and rough size as every other legacy-side count surplus, whereas the
+post-P1 reading is the only negative error in the whole comparison. Table 2's implied
+~16,134 sitting between them is consistent with Table 1's N and rate rows coming from
+different subsets of the same column -- exactly the pattern D-C already established
+across tables.
+
+Current DiD (filtered control, O1 basis): eligible **-1.426** (paper -1.412),
+ineligible **+5.485** (paper +4.204).

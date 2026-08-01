@@ -66,8 +66,16 @@ message("basis ", BASIS, " | rule year ", RULE_YEAR, " | seed ", SEED,
         " | require_j_alive ", REQUIRE_J_ALIVE)
 
 # ---- pool: target-area parcels in the active sample ----------------------------
+# O1 (2026-08-01): legacy's cleaning universe is the ACTIVE pool, before the
+# ineligible legacy-forest filter -- that filter lives at 2_empirics.R:1704, in the
+# panel-building stage, long after the cleaning has run. Our `basis_sample` already
+# has it applied, which withheld ~11.9k ineligible parcels from the conflict graph
+# and so changed which OTHER parcels got dropped. Default to the pre-filter column;
+# CR_POOL_PRE_P1=0 restores the old (incorrect) ordering.
 elig <- fread(file.path(emp_dir, "parcel_eligibility.csv"))
-samp_col <- if ("basis_sample" %in% names(elig)) "basis_sample" else "in_sample"
+pre_p1 <- Sys.getenv("CR_POOL_PRE_P1", unset = "1") != "0"
+samp_col <- if (pre_p1 && "in_sample_2019" %in% names(elig)) "in_sample_2019" else
+            if ("basis_sample" %in% names(elig)) "basis_sample" else "in_sample"
 pool <- elig[class != "never_eligible" & get(samp_col) == TRUE, .(car_id, class, area_ha)]
 dr <- fread(file.path(emp_dir, sprintf("parcel_defo_%d.csv", RULE_YEAR)))[
   , .(car_id, defo_rule = deforested_area_ha)]
