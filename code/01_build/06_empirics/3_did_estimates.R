@@ -69,14 +69,33 @@ sample_col <- if (use_resolved && "final_sample" %in% want) "final_sample" else
 elig <- elig[get(sample_col) == TRUE, .(car_id, class)]
 message("sample column: ", sample_col, " -> ", nrow(elig), " parcels")
 
+# L5 / D-C: Table 1 and Table 2 do NOT share a sample. Legacy's DiD control is
+# `ccar_clean_inReservas` (2_empirics.R:1811-1813, measured at :2701-2718) -- the raw
+# >1%-overlap reserve pool, with NO occupation filter and NO cleaning -- while
+# Table 1's control is the filtered, reserve-cleaned `control_final`. Under the
+# code-over-paper rule the DiD should use the raw pool, so that is the default here;
+# EMP_RAW_CONTROL=0 reverts to the Table-1-style control.
+RAW_CONTROL <- Sys.getenv("EMP_RAW_CONTROL", unset = "1") != "0"
+if (RAW_CONTROL) {
+  all_ctl <- fread(elig_f, select = c("car_id", "class"))[class == "never_eligible"]
+  before <- nrow(elig[class == "never_eligible"])
+  elig <- rbind(elig[class != "never_eligible"], all_ctl)
+  message("L5: raw control pool (no occupation filter, no cleaning): ",
+          before, " -> ", nrow(all_ctl), " parcels")
+}
+
 d <- rbindlist(lapply(files, fread))
 d <- merge(d, elig, by = "car_id")
 
-# F3: legacy measures the control pool on reserve-cleaned geometry. Swap in that
-# panel for the never-eligible parcels across the WHOLE window -- cleaned geometry
-# pre-2009 with uncleaned post-2009 would manufacture a break at the treatment date.
+# F3: for the TABLE 1 control, legacy measures the reserve-cleaned geometry. Swap in
+# that panel across the WHOLE window -- cleaned geometry pre-2009 with uncleaned
+# post-2009 would manufacture a break at the treatment date. Skipped under
+# EMP_RAW_CONTROL, where the point is precisely that legacy's DiD control is NOT
+# cleaned; mixing the two would be incoherent.
 ctl_panel <- file.path(emp_dir, "control_cleaned_panel_full.csv")
-if (file.exists(ctl_panel)) {
+if (RAW_CONTROL) {
+  message("L5: control on RAW uncleaned geometry (F3 panel not applied)")
+} else if (file.exists(ctl_panel)) {
   cp <- fread(ctl_panel)[year %in% DID_YEARS &
                          car_id %in% elig[class == "never_eligible", car_id]]
   cp <- cp[, .(car_id, year, deforested_area_ha,
