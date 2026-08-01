@@ -805,3 +805,58 @@ artifacts that cannot be reproduced from our data:
 4. Unseeded random draws in two conflict rules (distribution-equivalent only).
 
 No further code-level test on our side is expected to move these numbers.
+
+---
+
+# RESULT (2026-08-01): L4 fixed — one cleaning basis end to end
+
+Stage 16 -> 4b (EMP_DECISIONS=conflict_decisions_2004rules.csv) -> stage 2 -> stage 3,
+so erasure, areas, rates and drops now all come from the SAME 2004-rule, faithful
+decision set. Previously stage 2 mixed a 2014-rule erasure with 2004-rule drops.
+
+## Table 1 on the unified basis
+
+| | ours | paper | error |
+|---|---|---|---|
+| eligible N | 78,500 | 71,171 | +10% |
+| eligible defo 2008 / 2014 | **5.046 / 5.239** | 5.1 / 5.3 | **-1% / -1%** |
+| eligible rate pre-2009 (2005 / 2008) | 53.8 (51.2 / 56.2) | 58.4 | -8% |
+| eligible mean area | 131.9 | 143 | -8% |
+| ineligible N | 12,470 | 15,254 | -18% |
+| ineligible defo 2008 / 2014 | 3.194 / 3.564 | 4.1 / 4.7 | -22% / -24% |
+| ineligible rate pre-2009 (**2005**) | 16.6 (**11.9**) | 11.4 | +46% (**+4%**) |
+| never-elig N / defo / rate | 6,855 / 2.003 / 36.3 | 7,049 / 2.0 / 35.7 | -3% / +0% / +2% |
+
+The eligible deforestation totals now land within **1%** (were -3% on the mixed
+basis, +26% before the sweep). The ineligible 2005 rate is within 4%.
+
+## DiD on the unified basis (with D-A + D-B, legacy's options)
+
+| comparison | outcome | beta | se | p | paper |
+|---|---|---|---|---|---|
+| eligible vs never-elig | legacy-forest | **-1.400** | 0.821 | 0.127 | **-1.412** |
+| ineligible vs never-elig | legacy-forest | +5.614 | 1.396 | 0.004 | +4.204 |
+| eligible vs never-elig | claim | -1.110 | 0.791 | 0.198 | |
+| ineligible vs never-elig | claim | +5.948 | 1.390 | 0.003 | |
+
+**The eligible coefficient is -1.400 against the paper's -1.412 — a 0.012 p.p. gap.**
+Pre-period means 53.5 / 16.8 vs the paper's 58.4 / 11.4.
+
+## Bug fixed to get here
+
+Adopting the faithful semantics added the containment-0+0 random erase (N3), whose
+difference-geometries can return as GEOMETRYCOLLECTION. `terra::vect()` silently
+drops non-areal geometries, so the attribute table and the SpatVector fell out of
+sync and 4b died on coercion. Now the polygonal part is extracted and non-areal
+leftovers dropped — the same treatment legacy applies at :1141-1155. 19 regions
+were affected.
+
+Note the earlier chained run correctly ABORTED instead of letting stages 2-3 execute
+on the half-built erasure set.
+
+## Status of the remaining differences
+
+L4 is closed. Still open, in the plan's order: L6 (retire stage 4 / production
+semantics), L5 (give the DiD legacy's raw uncleaned control pool), L1/L2/L3 (2004
+level occupation test, geometric area cap, strict `>`). The ineligible N at -18% is
+still the aggressive corner of the semantics grid; the band remains 14.5k-14.9k.

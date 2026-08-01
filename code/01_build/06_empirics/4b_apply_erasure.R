@@ -95,6 +95,30 @@ erased_sf <- do.call(rbind, lapply(seq_len(nrow(erased)), function(i) {
   st_sf(car_id = erased$car_id[i], geometry = erased$geom[[i]])
 }))
 erased_sf <- st_make_valid(erased_sf)
+
+# Keep the areal part only. An erased region can come back as a GEOMETRYCOLLECTION
+# (polygon plus the touching edge/point left by the difference), and terra::vect()
+# silently drops those geometries -- the row count then no longer matches the
+# attribute table and the coercion fails. Legacy handles the same case with
+# st_collection_extract at :1141-1155.
+gt <- st_geometry_type(erased_sf)
+mixed <- which(gt == "GEOMETRYCOLLECTION")
+if (length(mixed) > 0) {
+  message("extracting polygons from ", length(mixed), " GEOMETRYCOLLECTION regions")
+  for (k in mixed) {
+    ext <- tryCatch(st_collection_extract(erased_sf[k, ], "POLYGON"), error = function(e) NULL)
+    st_geometry(erased_sf)[k] <- if (!is.null(ext) && nrow(ext) > 0) {
+      st_union(st_geometry(ext))
+    } else st_geometry(erased_sf)[k][0][1]
+  }
+}
+keep_areal <- st_geometry_type(erased_sf) %in% c("POLYGON", "MULTIPOLYGON") &
+  !st_is_empty(erased_sf)
+if (any(!keep_areal)) {
+  message("dropping ", sum(!keep_areal), " non-areal/empty erased regions")
+  erased_sf <- erased_sf[keep_areal, ]
+}
+
 erased_sf$erased_ha <- as.numeric(st_area(st_transform(erased_sf, 5880))) / 1e4
 message("erased regions built: ", nrow(erased_sf),
         " | mean erased area ", round(mean(erased_sf$erased_ha, na.rm = TRUE), 1), " ha")
