@@ -181,6 +181,7 @@ w[drop_inelig == TRUE, in_sample := FALSE]
 drop_inelig05 <- w$class == "ineligible" & (is.na(w$lf05_ha) | w$lf05_ha >= 1e5)
 w[, basis_sample := if (BASIS_YEAR == 2019) in_sample_2019 else
     (!is.na(rate_raw_2014) & rate_raw_2014 >= OCCUPIED_RATE)]
+w[, prefilter_sample := basis_sample] # the active pool before P1 (Table 1 basis)
 message("P1 (2005 basis) drops ", sum(drop_inelig05 & w$basis_sample, na.rm = TRUE),
         " ineligible parcels from the ", BASIS_YEAR, " basis sample")
 w[drop_inelig05 == TRUE, basis_sample := FALSE]
@@ -217,6 +218,24 @@ if (!is.null(keep_c)) {
 message("final_sample (", BASIS_YEAR, " basis + P1 + cleaning drops): ",
         sum(w$final_sample, na.rm = TRUE), " parcels")
 
+# Table 1 is reported WITHOUT P1 (stage 17, 2026-08-01). The :1704 filter removes
+# exactly the parcels with zero 2005 deforestation, whose rate is a well-defined 0 --
+# so dropping them lifts the ineligible mean. On the pre-filter set the paper's own
+# stated window ("average prior to 2009") gives 12.0 vs its 11.4 (+5%); on the
+# post-filter panel the same window gives 16.7 (+46%). Both of that column's errors
+# then point the same way as every other group's, instead of N being the lone
+# negative. final_sample (with P1) is retained for the DiD and for anything legacy
+# built off its filtered panel.
+w[, table1_sample := prefilter_sample]
+if (!is.null(keep_t)) {
+  w[class != "never_eligible" & !car_id %in% keep_t, table1_sample := FALSE]
+}
+if (!is.null(keep_c)) {
+  w[class == "never_eligible" & !car_id %in% keep_c, table1_sample := FALSE]
+}
+message("table1_sample (", BASIS_YEAR, " basis + cleaning drops, NO P1): ",
+        sum(w$table1_sample, na.rm = TRUE), " parcels")
+
 fwrite(w, file.path(emp_dir, "parcel_eligibility.csv"))
 message("Wrote: ", file.path(emp_dir, "parcel_eligibility.csv"))
 
@@ -227,11 +246,11 @@ message("Wrote: ", file.path(emp_dir, "parcel_eligibility.csv"))
 # it because the paper's ineligible figure tracks the 2005 value most closely.
 # F3: never-eligible quantities come from the reserve-cleaned panel when stage 13
 # has produced it -- legacy measures that pool on erased geometry.
-pre <- d[year %in% PRE_YEARS & car_id %in% w[final_sample == TRUE, car_id],
+pre <- d[year %in% PRE_YEARS & car_id %in% w[table1_sample == TRUE, car_id],
          .(car_id, year, rate = deforestation_rate)]
 pre <- merge(pre, w[, .(car_id, class)], by = "car_id")
 if (!is.null(keep_c) && file.exists(ctl_panel)) {
-  cp <- fread(ctl_panel)[year %in% PRE_YEARS & car_id %in% w[final_sample == TRUE, car_id],
+  cp <- fread(ctl_panel)[year %in% PRE_YEARS & car_id %in% w[table1_sample == TRUE, car_id],
                          .(car_id, year, rate = rate_legacyforest)]
   cp <- merge(cp, w[, .(car_id, class)], by = "car_id")
   pre <- rbind(pre[class != "never_eligible"], cp[class == "never_eligible"])
@@ -243,7 +262,7 @@ rate_tab <- merge(
   pre[year == 2005, .(mean_rate_2005 = round(mean(rate, na.rm = TRUE), 1)), by = class],
   by = "class", all = TRUE)
 
-s <- w[final_sample == TRUE, .(
+s <- w[table1_sample == TRUE, .(
   n_properties = .N,
   defor_Mha_2008 = round(sum(defor_ha_2008, na.rm = TRUE) / 1e6, 3),
   defor_Mha_2014 = round(sum(defor_ha_2014, na.rm = TRUE) / 1e6, 3),
@@ -256,7 +275,7 @@ s <- merge(s, rate_tab, by = "class", all.x = TRUE)
 # The control column's TOTALS must come from the cleaned geometry too, or they would
 # be measured on a different basis than its rates.
 if (!is.null(keep_c) && file.exists(ctl_panel)) {
-  cpa <- fread(ctl_panel)[car_id %in% w[final_sample == TRUE & class == "never_eligible", car_id]]
+  cpa <- fread(ctl_panel)[car_id %in% w[table1_sample == TRUE & class == "never_eligible", car_id]]
   s[class == "never_eligible", `:=`(
     defor_Mha_2008 = round(cpa[year == 2008, sum(deforested_area_ha, na.rm = TRUE)] / 1e6, 3),
     defor_Mha_2014 = round(cpa[year == 2014, sum(deforested_area_ha, na.rm = TRUE)] / 1e6, 3),

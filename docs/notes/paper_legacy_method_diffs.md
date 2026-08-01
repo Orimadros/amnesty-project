@@ -926,3 +926,56 @@ across tables.
 
 Current DiD (filtered control, O1 basis): eligible **-1.426** (paper -1.412),
 ineligible **+5.485** (paper +4.204).
+
+---
+
+# RESULT (2026-08-01): the ineligible rate window — it was the SET, not the window
+
+Question: the paper says "average prior to 2009", but on our panel that gave 16.7 vs
+its 11.4 (+46%) while the 2005 value alone gave 12.1 (+6%). Which is it?
+
+`17_rate_window_test.R` varies the averaging window AND the set, holding the cleaning
+decisions fixed:
+
+| class | set | 2005 | **2005-08 avg** | 2005-09 avg | paper |
+|---|---|---|---|---|---|
+| eligible | post-P1 / pre-P1 | 51.1 | 53.8 | 54.5 | 58.4 |
+| ineligible | post-P1 (:1704 applied) | 12.1 | **16.7** | 18.0 | 11.4 |
+| ineligible | **pre-P1 (no :1704)** | 8.0 | **12.0** | 13.3 | **11.4** |
+| never-eligible | post-P1 / pre-P1 | 33.6 | 36.3 | 36.9 | 35.7 |
+
+**The window was right all along; the SET was wrong.** The :1704 filter removes
+exactly the parcels with zero 2005 deforestation, whose rate is a well-defined 0 --
+dropping them lifts the mean. Restoring them, the paper's own stated window lands at
+12.0 vs 11.4 (+5%). Eligible and never-eligible are untouched by the filter, which
+confirms the test isolates it.
+
+## Effect on the whole ineligible column (stage 2 now reports `table1_sample`)
+
+| statistic | post-P1 (before) | **pre-P1 (now)** | paper |
+|---|---|---|---|
+| mean rate pre-2009 | 16.7 (+46%) | **12.0 (+5%)** | 11.4 |
+| mean area ha | 826 (+25%) | **673 (+2%)** | 661 |
+| deforested 2008 | 3.149 (-23%) | **3.678 (-10%)** | 4.1 |
+| deforested 2014 | 3.501 (-26%) | **4.164 (-11%)** | 4.7 |
+| change 2008->2014 | 11.2 (-28%) | **13.2 (-15%)** | 15.6 |
+| N | 12,120 (-21%) | 18,225 (+19%) | 15,254 |
+
+Every statistic in the column improved, and the mean area is now within 2%. N flips
+from -21% to +19%, i.e. it now points the SAME way as eligible (+9%) and matches the
+general legacy-side-loss pattern instead of being the lone negative error.
+
+Stage 2 therefore writes a third sample column, `table1_sample` (active basis +
+cleaning drops, NO P1), and reports Table 1 on it; `final_sample` (with P1) is kept
+for the DiD and anything built off legacy's filtered panel.
+
+## Current full comparison
+
+| | ours | paper | error |
+|---|---|---|---|
+| eligible N / defo08 / defo14 / rate / area | 77,300 / 4.988 / 5.172 / 53.8 / 132.3 | 71,171 / 5.1 / 5.3 / 58.4 / 143 | +9% / -2% / -2% / -8% / -7% |
+| ineligible N / defo08 / defo14 / rate / area | 18,225 / 3.678 / 4.164 / 12.0 / 673.2 | 15,254 / 4.1 / 4.7 / 11.4 / 661 | +19% / -10% / -11% / **+5%** / **+2%** |
+| never-elig N / defo08 / defo14 / rate | 6,855 / 2.003 / 2.189 / 36.3 | 7,049 / 2.0 / 2.2 / 35.7 | -3% / +0% / -1% / +2% |
+
+Remaining: the eligible rate (-8%) and the never-eligible mean area (+54% as a parcel
+mean; consistent at ~1% under the aggregate-implied reading), plus the count surplus.
