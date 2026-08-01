@@ -74,7 +74,11 @@ message("basis ", BASIS, " | rule year ", RULE_YEAR, " | seed ", SEED,
 # CR_POOL_PRE_P1=0 restores the old (incorrect) ordering.
 elig <- fread(file.path(emp_dir, "parcel_eligibility.csv"))
 pre_p1 <- Sys.getenv("CR_POOL_PRE_P1", unset = "1") != "0"
-samp_col <- if (pre_p1 && "in_sample_2019" %in% names(elig)) "in_sample_2019" else
+# The cleaning universe follows whichever sample basis stage 2 is running on, so a
+# 2017-basis test cleans the 2017 pool rather than the 2019 one.
+pool_year <- as.integer(Sys.getenv("EMP_SAMPLE_YEAR", unset = "2019"))
+pool_col <- paste0("in_sample_", pool_year)
+samp_col <- if (pre_p1 && pool_col %in% names(elig)) pool_col else
             if ("basis_sample" %in% names(elig)) "basis_sample" else "in_sample"
 pool <- elig[class != "never_eligible" & get(samp_col) == TRUE, .(car_id, class, area_ha)]
 dr <- fread(file.path(emp_dir, sprintf("parcel_defo_%d.csv", RULE_YEAR)))[

@@ -50,7 +50,7 @@ AREA_CAP <- 1500 # hectares
 # produced the published tables measures it on the 2019 raster (finding F2, see
 # docs/notes/paper_legacy_method_diffs.md). Both flags are computed and written; the
 # one the headline comparison uses is EMP_SAMPLE_YEAR (default 2019 = as-executed).
-SAMPLE_YEARS <- c(2014, 2019)
+SAMPLE_YEARS <- c(2014, 2017, 2019)
 BASIS_YEAR <- as.integer(Sys.getenv("EMP_SAMPLE_YEAR", unset = "2019"))
 if (!BASIS_YEAR %in% SAMPLE_YEARS) {
   stop("EMP_SAMPLE_YEAR must be one of ", paste(SAMPLE_YEARS, collapse = " / "))
@@ -150,15 +150,22 @@ w[, class := fifelse(
 # at 1,093 ha.
 w[, in_sample := !is.na(rate_raw_2014) & rate_raw_2014 >= OCCUPIED_RATE]
 
-# F2: the same filter as legacy actually ran it -- on the 2019 raster, strict >,
-# measured on raw (pre-erasure) rates like the 2014 flag above.
-if (2019 %in% have) {
-  s19 <- d[year == 2019, .(car_id, rate_raw_2019 = rate_raw)]
-  w <- merge(w, unique(s19, by = "car_id"), by = "car_id", all.x = TRUE)
-  w[, in_sample_2019 := !is.na(rate_raw_2019) & rate_raw_2019 > OCCUPIED_RATE]
-} else {
-  w[, in_sample_2019 := NA]
-  message("NOTE: no parcel_defo_2019.csv on disk -- F2 basis unavailable")
+# F2: the same filter as legacy actually ran it -- on a post-sample raster, strict >,
+# measured on raw (pre-erasure) rates like the 2014 flag above. 2019 is what the code
+# reads; 2017 is what its comment says it meant to use ("change to 2017"), so both
+# are computed when the data is on disk.
+for (sy in setdiff(SAMPLE_YEARS, 2014)) {
+  col <- paste0("in_sample_", sy)
+  if (sy %in% have) {
+    sr <- d[year == sy, .(car_id, r = rate_raw)]
+    setnames(sr, "r", paste0("rate_raw_", sy))
+    w <- merge(w, unique(sr, by = "car_id"), by = "car_id", all.x = TRUE)
+    w[, (col) := !is.na(get(paste0("rate_raw_", sy))) &
+        get(paste0("rate_raw_", sy)) > OCCUPIED_RATE]
+  } else {
+    w[, (col) := NA]
+    message("NOTE: no parcel_defo_", sy, ".csv on disk -- ", sy, " basis unavailable")
+  }
 }
 
 # Legacy 2_empirics.R:1704 applies an extra filter to the ineligible group:
@@ -179,8 +186,9 @@ message("legacy ineligible filter (2008 basis) drops ",
 w[drop_inelig == TRUE, in_sample := FALSE]
 
 drop_inelig05 <- w$class == "ineligible" & (is.na(w$lf05_ha) | w$lf05_ha >= 1e5)
-w[, basis_sample := if (BASIS_YEAR == 2019) in_sample_2019 else
-    (!is.na(rate_raw_2014) & rate_raw_2014 >= OCCUPIED_RATE)]
+w[, basis_sample := if (BASIS_YEAR == 2014)
+    (!is.na(rate_raw_2014) & rate_raw_2014 >= OCCUPIED_RATE)
+  else get(paste0("in_sample_", BASIS_YEAR))]
 w[, prefilter_sample := basis_sample] # the active pool before P1 (Table 1 basis)
 message("P1 (2005 basis) drops ", sum(drop_inelig05 & w$basis_sample, na.rm = TRUE),
         " ineligible parcels from the ", BASIS_YEAR, " basis sample")
