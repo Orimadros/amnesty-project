@@ -81,9 +81,18 @@ baseline 9.03 / beta +5.396 (morning's 15.27 / +3.377 RETRACTED as assembly
 artifacts); Table-1-vs-DiD dedup split found (wide dedups, long doesn't);
 Policy-Jump provenance = multas_RegsFE.R only; enforcement_clouds.dta is
 hand-assembled (buffer-0.5, 2dp) with an A/B half-scene visibility artifact
-straddling 2009; combined_warnings.gpkg is EMPTY. New next steps: tab:2
-interacted-FE columns (needs codigo_ibge); fold the dedup split into stage 2/3
-docs.
+straddling 2009; combined_warnings.gpkg is EMPTY. New next steps: fold the dedup split into stage 2/3 docs.
+
+## Late addendum: tab:2 interacted-FE columns implemented
+
+Stage 3's run_did gained time_fe = year / uf_year / muni_year (codigo_ibge =
+CAR-id second segment, no join needed; interacted cells as the twfe time
+factor, cluster uf). Ours vs print: col (2) -0.893 (0.420) vs -0.844 (0.325);
+(3) -0.951 (0.359) vs -0.829 (0.304); (5) +4.683 (1.067) vs +4.047 (0.815);
+(6) +4.250 (1.067) vs +3.744 (0.662). The halving-under-interacted-FE pattern
+reproduces on our panel; the April-2025 vintage does NOT show it on the
+eligible side (+0.142 / -0.054). tab:2 now covered in full specification —
+all six columns. did_estimates[_recovered].csv carries a time_fe column.
 
 ## Key files
 
