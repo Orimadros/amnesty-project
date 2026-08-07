@@ -67,6 +67,46 @@ twfe <- function(y, D, unit, time, cluster) {
   )
 }
 
+# Multi-regressor variant: y on a MATRIX X of regressors under the same two-way
+# FE + CR1 clustering. Needed for event studies (one dummy per relative year).
+# Same conventions as twfe(); K counts the FEs against the dof as above.
+twfe_k <- function(y, X, unit, time, cluster) {
+  X <- as.matrix(X)
+  if (is.null(colnames(X))) colnames(X) <- paste0("x", seq_len(ncol(X)))
+  keep <- !is.na(y) & stats::complete.cases(X)
+  y <- y[keep]; X <- X[keep, , drop = FALSE]
+  unit <- unit[keep]; time <- time[keep]; cluster <- cluster[keep]
+
+  yt <- demean_twoway(y, unit, time)
+  Xt <- apply(X, 2, demean_twoway, unit = unit, time = time)
+  Xt <- matrix(Xt, ncol = ncol(X), dimnames = list(NULL, colnames(X)))
+
+  XtX <- crossprod(Xt)
+  beta <- as.numeric(solve(XtX, crossprod(Xt, yt)))
+  e <- as.numeric(yt - Xt %*% beta)
+
+  cl <- as.character(cluster)
+  S <- rowsum(Xt * e, cl)
+  meat <- crossprod(S)
+
+  N <- length(y)
+  G <- nrow(S)
+  K <- ncol(Xt) + data.table::uniqueN(unit) + data.table::uniqueN(time) - 1L
+  correction <- (G / (G - 1)) * ((N - 1) / (N - K))
+  bread <- solve(XtX)
+  V <- correction * bread %*% meat %*% bread
+  se <- sqrt(diag(V))
+  tstat <- beta / se
+
+  list(
+    coefs = data.table(
+      term = colnames(Xt), beta = beta, se = se, t = tstat,
+      p = 2 * stats::pt(abs(tstat), df = G - 1, lower.tail = FALSE)
+    ),
+    n_obs = N, n_units = data.table::uniqueN(unit), n_clusters = G
+  )
+}
+
 # Self-test: recover a known beta from synthetic data with strong unit and time
 # effects. Run this before trusting the estimator on real data.
 twfe_selftest <- function(verbose = TRUE) {
@@ -83,6 +123,9 @@ twfe_selftest <- function(verbose = TRUE) {
 
   fit <- twfe(g$y, g$D, g$unit, g$time, g$cl)
   ok <- abs(fit$beta - true_beta) < 0.05
+  # twfe_k must agree exactly with twfe on the single-regressor case
+  fk <- twfe_k(g$y, cbind(D = g$D), g$unit, g$time, g$cl)
+  ok <- ok && abs(fk$coefs$beta - fit$beta) < 1e-8 && abs(fk$coefs$se - fit$se) < 1e-8
   if (verbose) {
     cat(sprintf(
       "twfe self-test: true beta %.3f | estimated %.3f (se %.3f) -> %s\n",

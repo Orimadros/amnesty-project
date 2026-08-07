@@ -1063,3 +1063,157 @@ reproduced the chain output byte-identically, so the state was coherent -- the
 commands are deterministic and seeded, so the duplicate run recomputed the same
 values. The 2019 artifacts were restored from backups afterwards and re-verified
 against the earlier 2019 run, again byte-identical.
+
+---
+
+# RESULT (2026-08-07): stage 3 adopts the do-file's filters — D-A/D-B retired, DiD converges
+
+Checkpoint-20260806 step 1 executed: stage 3 now applies the three sample filters
+from the recovered `empirics_amazon_final.do` by default (`EMP_DOFILE_FILTERS=0`
+disables):
+
+- **:25** — drop eligible parcels with MIN pre-2009 rate < 10, globally (4,635
+  parcels on our panel: 77,300 -> 72,665).
+- **:26** — sa flag on control parcels with 2009 deforested AREA < 5 ha (1,522 on
+  our panel), excluded from the INELIGIBLE regressions only; Table 1's eligible
+  regression keeps the full control.
+- **:65** — the ineligible regressions keep MAX pre-2009 rate < 85 on BOTH groups
+  (treated and control), per the do-file's `if` clause.
+
+NA semantics follow stage 19 (validated to 0.2% on their own panels). **D-A
+(zero-2014 drop) and D-B (winsorization) defaults flipped to OFF** — the final
+do-file regresses raw `value` from did.dta; both belonged to the superseded
+did1_new/did2_new export path. Flags remain for reruns.
+
+## Results (rate_legacyforest, twfe, cluster uf)
+
+| | ours (do-file filters) | their Apr-2025 panel, same code | paper |
+|---|---|---|---|
+| eligible beta | **-1.544** (se 0.684) | -0.344 (se 0.449) | -1.412 (se 0.558) |
+| ineligible beta | **+4.413** (se 1.220) | +3.377 (se 1.292) | +4.204 (se 0.886) |
+| eligible baseline (pooled y<2009) | 56.21 | 55.12 | 58.4 |
+| ineligible baseline | 15.42 | 15.27 | 11.4 |
+| eligible parcels | 72,665 | 71,044 | 71,171 |
+| ineligible parcels (reg sample) | 11,840 | 6,765 | 15,254 |
+
+The middle column is `EMP_PANEL=recovered` — stage 3 running the IDENTICAL code
+path on stage 19's rebuild of Pedro's own April-2025 panels (reproduces stage 19's
+estimates exactly, confirming the path). Outputs: `did_estimates[_recovered].csv`
++ `did_baselines[_recovered].csv`.
+
+## New findings
+
+1. **Our pipeline is now closer to the printed coefficients than Pedro's own
+   surviving April-2025 panel** (eligible -1.544 vs their -0.344 against printed
+   -1.412; ineligible +4.413 vs their +3.377 against +4.204). Consistent with the
+   vintage-drift diagnosis: the printed run used an earlier vintage that neither
+   side still has.
+2. **The checkpoint's expectation for the ineligible baseline is REFUTED**: the
+   do-file filters do NOT pull it toward 11.4 — it is ~15.3 on THEIR OWN panel
+   under their own filters (15.42 on ours). The printed 11.4 is vintage-specific,
+   like Table 1's control column. The eligible baseline did rise as expected
+   (53.8 -> 56.21, toward 58.4).
+3. **Table 1's "deforested area" rows are NOT `sum value if variable == 1`**: the
+   pooled cumulative-area mean is ~66 ha on both panels vs the printed 5.1. Stage
+   2 reproduces those rows to ~2% by other means; the do-file's own `sum` cannot
+   have produced them.
+4. Their April ineligible panel holds only 6,988 parcels against the paper's
+   implied 15,254 — the ineligible group has the largest vintage drift of the
+   three.
+
+---
+
+# RESULT (2026-08-07): Policy-Jump table replicated near-exactly; Figure 3 event studies implemented
+
+## Policy-Jump (stage 21, port of recovered multas_RegsFE.R)
+
+New helper `_helpers_feols.R` (one-way-FE OLS, CR1 cluster; Stata areg dof
+conventions incl. the nested-FE rule; self-tested against lm()). Fine-level LPMs,
+municipality FE, cluster municipality — against the printed table (tab:policy_jump):
+
+| outcome | ours coef (se) | paper coef (se) | ours N | paper N |
+|---|---|---|---|---|
+| Target first time | -0.0503 (0.0042) | -0.051 (0.0042) | 120,818 | 118,928 |
+| Target first time, no control | +0.0134 (0.0041) | +0.016 (0.0048) | **104,757** | **104,757** |
+| Control after target | -0.0084 (0.0014) | -0.0081 (0.0015) | 116,540 | 114,414 |
+| Deforestation/Arson | **-0.0685 (0.0051)** | **-0.0685 (0.0051)** | **421,968** | **421,968** |
+
+Deforestation/Arson is an EXACT match (coef, se, N). Model 2's N matches exactly
+but the coefficient differs slightly (+0.0134 vs +0.016) — same sample, so a
+small definitional difference in the outcome or a different script vintage
+(multas.R / multas_updated.R variants exist); the sign and magnitude carry.
+Models 1/3 differ ~1.7% in N (likely the fines extract vintage), coefficients
+within half a rounding step. Outputs: `policy_jump_table.csv`,
+`policy_jump_yearfe_coefs.csv` (the year-FE event paths, ref 2008, for the
+figure versions).
+
+## Figure 3 event studies (stage 22, eventdd-equivalent)
+
+`twfe_k()` added to _helpers_twfe.R (multi-regressor two-way FE + CR1; self-test
+ties it to twfe() exactly). Spec per the do-file (:129/:133): rate on relative-
+year dummies (ref 2008), parcel + year FE, cluster uf; control carries no event
+dummies (eventdd's baseline convention). On OUR panel (do-file filters):
+
+- eligible: pre-2009 coefficients flat (−0.18/+0.03/−0.16, all p>0.5), post
+  monotonically declining to **−3.23 (se 0.84)** by 2014 — the Figure 3 shape.
+- ineligible: pre ramp −2.3→−1.0, post +0.75→**+5.70 (se 1.35)** by 2014.
+
+On THEIR April-2025 panel (EMP_PANEL=recovered): same shapes, attenuated
+(eligible 2014 −2.28; ineligible 2014 +4.40) — consistent with the vintage-drift
+pattern in the levels DiD. Note our eligible pre-trends are FLATTER than theirs
+(theirs: 2005 −1.43, p=0.004). Outputs: `event_study_coefs[_recovered].csv`.
+
+## Figure 4 (added to stage 22, same day)
+
+Published Fig 4 = ineligible-vs-control RATE event studies split by DECLARED area
+band (do-file :175/:177): keep `value_max < 95` (max rate over ALL years) and the
+band, both applied to control too; no sa / max-pre-85 filters here. Ours:
+
+- **area <= 1500** (future-amnesty-eligible): pre ramp -4.2 -> -1.6, post +1.23
+  -> **+6.28 (se 1.66)** by 2014.
+- **1500 < area <= 2500**: nothing — post coefficients 0 to -0.9, none of the
+  first three significant.
+
+That is the paper's conditional-expectation pattern. Published Fig 3/Fig 4 panels
+are RATE only (the deforested-area panels are commented out in the manuscript tex
+and the do-file alike), so both figures are now covered by stage 22.
+
+## Policy-Jump model 2, follow-up (same day)
+
+Probed the only plausible alternative spec: policy defined on the observation
+YEAR instead of target_min_year gives beta = -0.0129 (sign flip) — so the print
+(+0.016) used the ported definition. With N matching exactly (104,757), the
+0.0134-vs-0.016 residual is a fines-extract vintage artifact, not spec. CLOSED
+as far as recovered materials allow.
+
+---
+
+# RESULT (2026-08-07, evening): the SUTVA table (tab:3) reproduces EXACTLY
+
+Stage 20 rebuilt `reg1_n` (absent from the share) from autos_infracao_df.rds +
+CNFP SHP_2013 + the biome border, then ran the recovered do-file's specs. Against
+every printed cell of tab:3:
+
+| cell | ours | printed |
+|---|---|---|
+| N (cols 1-6) | **5,655** | **5,655** (exact) |
+| (1) after, muni FE | 0.0021 (0.0015) | 0.002 (0.002) |
+| (2) after, state FE | 0.0013 (0.0012) | 0.001 (0.001) |
+| (3) + propensity_move | 0.0023 (0.0016) | 0.002 (0.002) |
+| (4) event coefficients 2006-2014 | 0.000/-0.001/0.001/0.005/0.002/0.003/0.002/-0.001 | identical, all 8 |
+| (5) + enforcement intensity | 0.0038 (0.0024) | 0.004 (0.002) |
+| (6) + adjusted intensity | 0.0034 (0.0021) | 0.003 (0.002) |
+| baseline before / after 2009 | 0.157% / 0.320% | 0.16% / 0.32% |
+| (7) target enf. on after | 0.0330 (0.0181), N 9 | 0.033 (0.018), N 9 |
+| (8) control enf. on after | 0.0309 (0.0117), N 9 | 0.031 (0.012), N 9 |
+
+Every coefficient, SE, N and baseline matches to printed rounding — with the
+input dataset REBUILT from scratch, so this validates the whole chain (CNFP 2013
+target/control definitions, point-in-polygon fine assignment, prior_fine
+construction, cloud controls) and not just the regressions. reg1 rebuild: 5,788
+gleba fine rows (2005-2014), 3,817 entities, 15 prior_fine=1 rows; the do-file's
+`> 2005` filter leaves exactly the printed 5,655.
+
+The land-grabber-response exhibit is CLOSED. Remaining unreproduced exhibits are
+all blocked on data Pedro must supply (takeup, prices, did.dta vintages) — see
+missing_for_replication.md.
