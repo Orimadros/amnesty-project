@@ -29,37 +29,28 @@ read_year <- function(prefix, y) {
   x
 }
 
-build_long <- function(prefix, area_filter = FALSE) {
-  base <- read_year(prefix, 2005)
-  base[, area := defo / (rate / 100)]
-  base[is.nan(area), area := NA]
-  # legacy wide-panel filters, applied year by year (dedup + n==1)
-  panel <- list()
-  for (y in years) {
+# CORRECTED 2026-08-07 after the line-level audit of 2_empirics.R:1549-2304.
+# The did.dta LONG panels (:1569-1585 etc.) apply, per year independently:
+#   group_by(COD_IMO) %>% add_count() %>% filter(n == 1)
+# i.e. n==1 counted BEFORE any dedup (exact-duplicate rows kill the parcel for
+# that year), NO anchoring of the parcel set to 2005, and NO area<1e5 filter on
+# any group (2_empirics.R:1704 belongs to the WIDE descriptive table only).
+# The previous version of this stage uniqued exact dupes first, anchored to the
+# 2005 file, and area-filtered the ineligible -- that changed the ineligible
+# side materially (6,988 -> 13,134 parcels); eligible side unaffected.
+build_long <- function(prefix) {
+  rbindlist(lapply(years, function(y) {
     x <- read_year(prefix, y)
-    x <- unique(x, by = c("COD_IMO", "rate", "defo"))
     x[, n := .N, by = COD_IMO]
     x <- x[n == 1][, n := NULL]
     x[, year := y]
-    panel[[as.character(y)]] <- x
-  }
-  # wide via left_joins from 2005 (defines the parcel set)
-  w <- merge(panel[["2005"]],
-             unique(base[, .(COD_IMO, area)], by = "COD_IMO"),
-             by = "COD_IMO", all.x = TRUE)
-  ids <- w$COD_IMO
-  if (area_filter) {
-    w <- w[!is.na(area) & area < 1e5]  # 2_empirics.R:1704, ineligible only
-    ids <- w$COD_IMO
-  }
-  long <- rbindlist(lapply(panel, function(x) x[COD_IMO %in% ids]))
-  long <- merge(long, w[, .(COD_IMO, area)], by = "COD_IMO", all.x = TRUE)
-  long
+    x
+  }))
 }
 
 message("assembling eligible / inelegible / never eligible panels...")
 e <- build_long("CAR_eligible");   e[, group := "eligible"]
-i <- build_long("CAR_ineligible", area_filter = TRUE); i[, group := "inelegible"]
+i <- build_long("CAR_ineligible"); i[, group := "inelegible"]
 c <- build_long("CAR_control");    c[, group := "never eligible"]
 combined <- rbind(e, i, c)
 message("combined: ", nrow(combined), " parcel-years, ",

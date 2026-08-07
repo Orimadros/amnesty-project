@@ -70,6 +70,21 @@ Docs updated: `paper_legacy_method_diffs.md` (two dated 2026-08-07 sections),
    DadosTerraLegal.csv, prices_reg.dta + vtn_YYYY.rds, the Table-1-control
    vintage, and ~/Documents/reg1_n.dta (to diff against our rebuild).
 
+## Evening addendum: the version map + a stage-19 correction
+
+Line-by-line audit of all legacy regression code (three parallel passes) →
+**docs/notes/regression_version_map.md** (the reference doc). Big items:
+did.dta located (2_empirics.R:2304, interactive-only export); THREE DiD
+generations mapped; **stage 19 assembly corrected** (no dup-rescue / no 2005
+anchor / no area filter) — ineligible on their panel is now 13,134 parcels /
+baseline 9.03 / beta +5.396 (morning's 15.27 / +3.377 RETRACTED as assembly
+artifacts); Table-1-vs-DiD dedup split found (wide dedups, long doesn't);
+Policy-Jump provenance = multas_RegsFE.R only; enforcement_clouds.dta is
+hand-assembled (buffer-0.5, 2dp) with an A/B half-scene visibility artifact
+straddling 2009; combined_warnings.gpkg is EMPTY. New next steps: tab:2
+interacted-FE columns (needs codigo_ibge); fold the dedup split into stage 2/3
+docs.
+
 ## Key files
 
 - `docs/notes/paper_legacy_method_diffs.md` — findings trail + closed register.

@@ -85,7 +85,7 @@ match in distribution.
 2. `miseEnPlace/car_eligible_cleaned.*` + `car_ineligible_cleaned.*` (~58 MB) —
    the May 2025 final group shapefiles.
 3. `fines_robustness/` data companions (`enforcement_clouds.dta`,
-   `fines_per_warning_ratios.csv`, `combined_warnings.gpkg`, DETER folders) —
+   `fines_per_warning_ratios.csv`, `combined_warnings.gpkg` (NOTE 2026-08-07: file is an EMPTY GeoPackage skeleton — no feature tables), DETER folders) —
    small-to-medium; unblocks running the SUTVA do-file end to end.
 4. `miseEnPlace/autos_infracao_df.rds` (56 MB) — the fines microdata.
 5. `data/` per-year `CAR_*_defo_YYYY.rds` (~6 MB × N) — exact panel comparison.

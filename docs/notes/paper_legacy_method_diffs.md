@@ -1217,3 +1217,46 @@ gleba fine rows (2005-2014), 3,817 entities, 15 prior_fine=1 rows; the do-file's
 The land-grabber-response exhibit is CLOSED. Remaining unreproduced exhibits are
 all blocked on data Pedro must supply (takeup, prices, did.dta vintages) — see
 missing_for_replication.md.
+
+---
+
+# RESULT (2026-08-07, night): full version map of the legacy regressions + a stage-19 correction
+
+Line-by-line audit of every regression-bearing legacy file (three parallel
+passes: 2_empirics.R + treatmentGroups_generate.R; the four multas*.R;
+Multas-AvisosMatchingV1-3 + both do-files). Consolidated in
+**docs/notes/regression_version_map.md** — that doc is now the reference for
+"which version produced which printed number". Highlights:
+
+1. **did.dta found**: written at 2_empirics.R:2304 from `combined` (:2160-2302);
+   column fingerprint (cancelled + when_occupied) proves the recovered do-file
+   ran on it. The export is unreachable by a clean source() (:2282-2297 error) —
+   all printed runs were interactive; this is the structural cause of vintage
+   drift.
+2. **STAGE 19 ASSEMBLY CORRECTED**: the did.dta long panels use per-year
+   add_count()/n==1 only — no exact-dup rescue, no 2005 anchor, no area<1e5
+   (that filter is the WIDE/Table-1 path, 2_empirics.R:1704). Re-running the
+   corrected rebuild: ineligible side changes materially (13,134 parcels /
+   169,987 obs / baseline 9.03 / beta +5.396 vs the earlier 6,988 / 109,740 /
+   15.27 / +3.377); eligible side unchanged. **Retraction**: this morning's
+   claim "their own panel gives ineligible baseline ~15.3" was an artifact of
+   the old assembly; the faithful number is 9.03. Printed 11.4 sits BETWEEN
+   assembly variants and still matches none — vintage explanation stands, the
+   direction claim does not.
+3. **Table 1 vs DiD run on structurally different samples even within one
+   vintage**: the wide (Table 1) panels dedup exact-duplicate rows before n==1;
+   the long (DiD) panels do not (dup rows kill the parcel-year). Also explains
+   part of why tab:2's ineligible obs (231,833) exceed Table 1's counts.
+4. **Policy-Jump provenance nailed**: only multas_RegsFE.R could print it;
+   earlier multas versions differ (contemporaneous <=y rule, other year windows)
+   and multas_updated.R is a different methodology (point-in-polygon, no year
+   filter, prior_fine estimand). Our ports already replicate the load-bearing
+   quirks (min_year==year; model-3 window asymmetry; grouped-select CPF rescue).
+5. **enforcement_clouds.dta is hand-assembled**: enforcement cols = buffer-0.5
+   fines_per_warning rounded to 2dp (verified exactly); fraction cols average
+   A/B half-scenes as separate rows, mechanically halving 2007-2010 visibility —
+   an artifact straddling the treatment cutoff that contaminates tab:3 cols 7-8
+   as an exhibit (our replication of print is unaffected). V1->V2 changed
+   nothing numerically; V3 is the only operative matching version.
+6. **combined_warnings.gpkg (recovered share) is an empty GeoPackage skeleton**
+   — the DETER warnings data is NOT in hand; correct the survey doc's row.
