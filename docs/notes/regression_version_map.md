@@ -180,7 +180,7 @@ spec, EXACT long-panel assembly (stage 19 as corrected 2026-08-07):
 | printed exhibit | producing version | our replication status |
 |---|---|---|
 | tab:2 cols 1/4 | did.dta (Gen 3) + do-file :47/:65 | betas/signs match (-1.544/+4.413); exact N blocked on did.dta vintage |
-| tab:2 cols 2-3/5-6 | same, uf##year / ibge##year absorbs | not yet implemented (needs interacted-FE demeaning) |
+| tab:2 cols 2-3/5-6 | same, uf##year / ibge##year absorbs | stage 3 time_fe variants: -0.893/-0.951 vs print -0.844/-0.829; +4.683/+4.250 vs +4.047/+3.744 — halving pattern reproduces |
 | fig:3 | do-file :129/:133 | stage 22, shapes match |
 | fig:4 | do-file :175/:177 (value_max<95 = rate reading, verified) | stage 22, pattern matches |
 | tab:policy_jump | multas_RegsFE.R :396-441 | stage 21: col 4 EXACT; col 2 N exact; cols 1/3 within 2% |
@@ -192,8 +192,8 @@ spec, EXACT long-panel assembly (stage 19 as corrected 2026-08-07):
 
 1. did.dta itself (the printed vintage) — still the #1 ask (with reg1_n.dta as
    a nice-to-have diff target; we rebuild it exactly).
-2. tab:2's interacted-FE columns (2)(3)(5)(6) — implementable in stage 3 via
-   demeaning by uf×year / ibge×year (needs codigo_ibge on our panel).
+2. ~~tab:2's interacted-FE columns~~ DONE same day (stage 3 time_fe variants;
+   codigo_ibge = CAR-id second segment).
 3. The wide-vs-long dedup split means our Table-1-vs-DiD comparisons should not
    expect the same parcel counts even within one vintage — fold into stage 2/3
    docs.

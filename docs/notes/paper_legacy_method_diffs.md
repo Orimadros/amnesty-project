@@ -1260,3 +1260,23 @@ Multas-AvisosMatchingV1-3 + both do-files). Consolidated in
    nothing numerically; V3 is the only operative matching version.
 6. **combined_warnings.gpkg (recovered share) is an empty GeoPackage skeleton**
    — the DETER warnings data is NOT in hand; correct the survey doc's row.
+
+## tab:2 interacted-FE columns implemented (2026-08-07, late)
+
+Stage 3 now estimates all three of the do-file's absorb variants (time_fe =
+year / uf_year / muni_year; codigo_ibge taken from the CAR id's second segment,
+which IS the declared municipality). rate_legacyforest, cluster uf:
+
+| col | ours | printed | their Apr-2025 panel |
+|---|---|---|---|
+| (2) eligible, uf×year | -0.893 (0.420) | -0.844 (0.325) | +0.142 (0.333) |
+| (3) eligible, muni×year | -0.951 (0.359) | -0.829 (0.304) | -0.054 (0.549) |
+| (5) ineligible, uf×year | +4.683 (1.067) | +4.047 (0.815) | +5.882 (1.309) |
+| (6) ineligible, muni×year | +4.250 (1.067) | +3.744 (0.662) | +5.476 (1.255) |
+
+The paper's signature pattern — the eligibility effect roughly halves under
+interacted FE while the expectation effect barely moves — REPRODUCES on our
+panel (-1.544 -> -0.89/-0.95; +4.413 -> +4.68/+4.25), with cols (2)/(3) within
+0.05-0.12 of print. The surviving April-2025 vintage again performs worse than
+our pipeline on the eligible side. tab:2 is now covered in full spec (all six
+columns), vintage residuals aside.

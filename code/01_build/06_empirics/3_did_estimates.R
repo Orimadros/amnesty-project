@@ -162,6 +162,10 @@ setnames(d, "deforestation_rate", "rate_legacyforest")
 # State is the CAR id prefix (e.g. "MT-5101704-0244..."), so no extra join needed.
 d[, state := substr(car_id, 1, 2)]
 d <- d[grepl("^[A-Z]{2}$", state)]
+# Municipality: the id's second segment is the 7-digit IBGE code. Legacy attached
+# codigo_ibge from temas_ambientais_update (the declared municipality); the CAR id
+# prefix IS that declaration, so this reproduces it without the microdata join.
+d[, muni := tstrsplit(car_id, "-", keep = 2L)]
 
 # ---- do-file sample filters (empirics_amazon_final.do :25/:26/:65) -----------
 # Per-parcel filter variables, computed on the assembled panel (so, for the
@@ -238,15 +242,25 @@ comparison_sample <- function(treated_class) {
   s
 }
 
-run_did <- function(treated_class, outcome) {
+# time_fe selects the do-file's absorb variants: "year" = a(COD_IMO i.y), cols
+# (1)/(4); "uf_year" = a(COD_IMO i.uf##i.y), cols (2)/(5); "muni_year" =
+# a(COD_IMO i.codigo_ibge##i.y), cols (3)/(6). The interaction spans the same
+# space as its cell dummies, so demeaning by parcel and by the interacted cell
+# is the exact within transformation. Cluster stays uf throughout, as printed.
+run_did <- function(treated_class, outcome, time_fe = "year") {
   s <- comparison_sample(treated_class)[!is.na(get(outcome))]
   s[, treat := as.integer(class == treated_class)]
   s[, treat_post := treat * post]
 
-  fit <- twfe(s[[outcome]], s$treat_post, s$car_id, s$year, s$state)
+  tvar <- switch(time_fe,
+                 year      = as.character(s$year),
+                 uf_year   = paste(s$state, s$year),
+                 muni_year = paste(s$muni, s$year))
+  fit <- twfe(s[[outcome]], s$treat_post, s$car_id, tvar, s$state)
   data.table(
     comparison = paste0(treated_class, " vs never_eligible"),
     outcome = outcome,
+    time_fe = time_fe,
     beta_pp = round(fit$beta, 3),
     se = round(fit$se, 3),
     t = round(fit$t, 2),
@@ -271,6 +285,24 @@ res <- rbindlist(lapply(
 
 cat("\n================ DiD ESTIMATES ================\n")
 print(as.data.frame(res))
+
+# ---- tab:2 interacted-FE columns (2)(3)(5)(6) --------------------------------
+fev <- rbindlist(lapply(c("uf_year", "muni_year"), function(tf)
+  rbindlist(lapply(c("eligible", "ineligible"), run_did,
+                   outcome = "rate_legacyforest", time_fe = tf))))
+res <- rbind(res, fev)
+
+fe_paper <- data.table(
+  comparison = rep(c("eligible vs never_eligible", "ineligible vs never_eligible"),
+                   times = 2),
+  time_fe = rep(c("uf_year", "muni_year"), each = 2),
+  p_beta = c(-0.844, 4.047, -0.829, 3.744),
+  p_se = c(0.325, 0.815, 0.304, 0.662)
+)
+cat("\n========== INTERACTED-FE VARIANTS (tab:2 cols 2/3/5/6) ==========\n")
+print(as.data.frame(merge(
+  fev[, .(comparison, time_fe, beta_pp, se, p)],
+  fe_paper, by = c("comparison", "time_fe"))))
 
 # ---- do-file baselines (Table-1 style) ---------------------------------------
 # The do-file's baselines are `sum value if ... & y < 2009` on the filtered
@@ -302,7 +334,8 @@ paper <- data.table(
 )
 
 cat("\n================ VS THE PAPER ================\n")
-cmp <- merge(res[outcome == "rate_legacyforest"], paper, by = "comparison", all.x = TRUE)
+cmp <- merge(res[outcome == "rate_legacyforest" & time_fe == "year"], paper,
+             by = "comparison", all.x = TRUE)
 for (i in seq_len(nrow(cmp))) {
   r <- cmp[i]
   cat("\n--", r$comparison, "--\n")
