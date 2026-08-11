@@ -67,6 +67,21 @@ only recovered code, port price side to the data walls.
    ever surfaces; the turnover producer + tab:6/tab:25 do-files stay on the
    Pedro ask-list.
 
+## FINAL MORNING ADDENDUM (2026-08-11): estimation authorized and done
+
+User relaxed migrate-only FOR ESTIMATION. Stages 26-29 added and run:
+- tab:25 (stage 26, May vintage): universe N EXACT (73,809); baselines
+  10.5/41.6 vs printed 10.2/42.2; near-exact bin gradients; 27-28/28 signs.
+- tab:6 (stage 27): eligible share-x-post 0.438/0.535 vs printed 0.419/0.518
+  (2nd SE 0.109 vs 0.108) under log(price_lavoura)+count shares; ineligible
+  same-signed low (vintage); col 5 same-signed N 22 vs 28; cols 3-4 walled.
+- Stage 28 Fig-applications data (matches chart); stage 29 invaded-area
+  regression (did2 -2,841 ha, se 527).
+- VTN steps 7-8 ran (recovered vtn_region tables; PROVENANCE.md in
+  data/clean/vtn_IHS). VNP validated exactly (see method-diffs).
+Every main exhibit now has our number next to the printed one, except tab:6
+cols (3)-(4) (turnover data nonexistent in shares).
+
 ## Ask-list for Pedro after tonight (shrunk)
 
 did.dta (printed vintage), the tab:6 + takeup (tab:25) Stata do-files, the
