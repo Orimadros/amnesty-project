@@ -1280,3 +1280,34 @@ panel (-1.544 -> -0.89/-0.95; +4.413 -> +4.68/+4.25), with cols (2)/(3) within
 0.05-0.12 of print. The surviving April-2025 vintage again performs worse than
 our pipeline on the eligible side. tab:2 is now covered in full spec (all six
 columns), vintage residuals aside.
+
+---
+
+# RESULT (2026-08-10, overnight): deep Dropbox fetch — walls fall, and two validations
+
+Full enumeration + download of both shares (blanket authorization). Recovered:
+the complete Terra Legal microdata (DadosTerraLegal.csv + 9 audited-shape CSVs),
+the SIGEF/SNCI/SNCR/CAFIR title registries (4.5GB), vtn_2015-2022[_clean].rds +
+vtn_region CSVs, all four parcel_nb_lavoura_wide.rds, the 149 Clear Spots
+scenes, CAR_eligible_defo_1989-2001.rds, yearly_average_price_region.xlsx (+ its
+previously-unseen producer scripts REGION_ID_CORRECTION/MAPLAVOURA/
+MAPNORTHBRAZIL.R in data/input/landvalues/vnp/), and both projects' .Rhistory.
+
+1. **VNP panels VALIDATED**: our vnp01/vnp02 outputs are 100.00% cell-identical
+   to Pedro's city_region_yearly_pt[_pre2015].rds (5,082 and 28,620 numeric
+   cells; their pre2015 carries one extra all-NA region row and 15 extra
+   columns). First exact external validation of a whole migrated stage.
+2. **prices_reg rebuilt** (stage 25): 29 regions x 2002-2017, 418 priced
+   region-years; price_north joined for 238 region-years from the recovered
+   xlsx. Remaining tab:6 walls: the turnover-share producer (in no recovered
+   script) and the Stata do-file.
+3. **Do-file census is now complete and final**: the full miseEnPlace listing
+   contains exactly ONE do-file (empirics_amazon_final.do). The tab:6 (prices),
+   tab:25 (takeup) and any other Stata specs do not survive anywhere in either
+   share. Estimation for those exhibits cannot be migrated without inventing
+   code — data builds stop at the documented walls.
+4. The RegsFE .Rhistory (miseEnPlace) shows the Policy-Jump table's exact
+   interactive run — including the rbind step executing without error, settling
+   the audit's grouped-select question in favor of our port's semantics.
+5. In flight at writing: stage 23 (visible-fraction rebuild, 149 scenes) and
+   stage 24 (takeup: 102,559 audited polygons read; matching pipelines running).
