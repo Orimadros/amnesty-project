@@ -123,12 +123,28 @@ prices_reg <- shares %>%
                values_to = "price_lavoura") %>%
   mutate(year = as.integer(gsub("price_(\\d{4})_lavoura", "\\1", year)))
 
-# ---- the two missing joins (:2572-2574) --------------------------------------
-# yearly_average_price_region producer missing -> the :2573 NA-fallback applies:
-prices_reg$price_north <- prices_reg$price_lavoura
+# ---- the :2572-2574 joins ----------------------------------------------------
+# yearly_average_price_region RECOVERED 2026-08-10 as an xlsx in
+# data/input/landvalues/vnp/ (built by the REGION_ID_CORRECTION/MAPLAVOURA
+# chain in the same folder): (region_id, year, price_north). :2573's fallback
+# fills price_north with price_lavoura where the join is NA -- as in legacy.
+yap_f <- here("data", "legacy_dropbox", "input_landvalues", "vnp",
+              "yearly_average_price_region.xlsx")
+if (file.exists(yap_f)) {
+  yap <- readxl::read_excel(yap_f)
+  prices_reg <- left_join(prices_reg, yap, c("region_id", "year"))
+  n_north <- sum(!is.na(prices_reg$price_north))
+  prices_reg$price_north <- ifelse(is.na(prices_reg$price_north),
+                                   prices_reg$price_lavoura, prices_reg$price_north)
+  message("price_north joined from yearly_average_price_region.xlsx: ",
+          n_north, " region-years matched")
+} else {
+  prices_reg$price_north <- prices_reg$price_lavoura
+  message("WALL: yearly_average_price_region.xlsx not found -- price_north = price_lavoura")
+}
+# turnover shares: producer still missing from every recovered script.
 prices_reg$share_eligible_turnover <- NA_real_
 prices_reg$share_ineligible_turnover <- NA_real_
-message("WALL: price_north = price_lavoura (yearly_average_price_region producer missing)")
 message("WALL: turnover shares NA (producer missing)")
 
 # ---- less_1500 (:2317-2324) --------------------------------------------------
