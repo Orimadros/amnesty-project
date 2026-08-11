@@ -187,7 +187,14 @@ applications_shp <- rbind(tls[, common], p1[, common], p2[, common], p3[, common
 message("combined application polygons: ", nrow(applications_shp))
 
 # ---- applies / receives (:304-339, :458-477) ---------------------------------
-car_eligible <- read_sf(file.path(dd, "output_full", "car_eligible_cleaned.shp"))
+# 3_policy1.R reads data/intermediate/car_eligible_cleaned.shp; at its run time
+# that was the MAY-2025 vintage (73,809 parcels -- the printed tab:25 N).
+# EMP_CAR_VINTAGE=april swaps in the April file (81,406) from output_full.
+VINTAGE <- Sys.getenv("EMP_CAR_VINTAGE", unset = "may")
+car_f <- if (VINTAGE == "april") file.path(dd, "output_full", "car_eligible_cleaned.shp") else
+         file.path(dd, "miseEnPlace", "car_eligible_cleaned.shp")
+message("eligible universe: ", VINTAGE, " vintage (", car_f, ")")
+car_eligible <- read_sf(car_f)
 
 overlap_flag <- function(dataset_A, dataset_B, threshold = 0.9) {
   dataset_B <- st_transform(dataset_B, st_crs(dataset_A))
@@ -280,11 +287,12 @@ if (file.exists(tem_f)) {
   message("NOTE: temas microdata not found -- area covariates omitted")
 }
 
-fwrite(flags, file.path(emp_dir, "takeup.csv"))
+suffix <- if (VINTAGE == "april") "_april" else ""
+fwrite(flags, file.path(emp_dir, paste0("takeup", suffix, ".csv")))
 cat("\n================ TAKE-UP DATASET ================\n")
 cat("eligible parcels: ", nrow(flags),
     " | applies: ", sum(flags$applies), sprintf(" (%.1f%%)", 100 * mean(flags$applies)),
     " | receives: ", sum(flags$receives), sprintf(" (%.1f%%)", 100 * mean(flags$receives)),
     "\n", sep = "")
 cat("paper anchors: application rate lower bound ~10%; titled-by-2016 ~42% of audited\n")
-cat("Wrote: ", file.path(emp_dir, "takeup.csv"), "\n", sep = "")
+cat("Wrote: ", file.path(emp_dir, paste0("takeup", suffix, ".csv")), "\n", sep = "")
