@@ -11,7 +11,7 @@ Status key: **DONE** = we reproduce it · **PARTIAL** = some columns/panels only
 | # | Exhibit | Status | What exists in legacy | What is missing |
 |---|---|---|---|---|
 | 1 | **Characteristics of Occupations** (Table 1) | **DONE** | `2_empirics.R` builds the groups; the table itself was typed by hand | — |
-| 2 | **2009 Amnesty Take-Up and Eligibility** | **CODE + DATA MISSING** | `3_policy1.R` links Terra Legal applications to CAR and exports `takeup.dta` | The regressions (ran in Stata). Input `DadosTerraLegal.csv` is not in `data/input/` |
+| 2 | **2009 Amnesty Take-Up and Eligibility** | **DATA HALF DONE 2026-08-11 — ANCHORS MATCH** | Stage 24 (`24_takeup.R`) runs 3_policy1.R end to end on the recovered Terra Legal + SIGEF/SNCI/SNCR data: applies 9,131/81,406 = **11.2%** (paper: ~10% lower bound); receives/applies = **41.8%** (paper: 42%) | The tab:25 regressions (Stata, do-file confirmed absent from both shares) |
 | 3 | **2009 Amnesty Eligibility and Expectation Effects** (Table 2) | **PARTIAL** | DiD panels exported as `did1_new.dta` / `did2_new.dta` | We estimate cols (1) and (4) — property+year FE. Cols (2)(3)(5)(6) use **year×state** and **year×municipality** FE, not implemented. Their Stata `.do` file is absent |
 | 4 | **Assessing the Response from Land-Grabbers in Control Areas** (Table 3, SUTVA) | **DONE 2026-08-07 — EXACT** | Stage 20 (`20_fines_sutva.R`) rebuilds `reg1_n` from scratch and reproduces EVERY printed cell of tab:3 to rounding (N 5,655 exact; all 8 event coefficients identical; baselines 0.16%/0.32%; cols 7-8 exact) | — |
 | 5 | **Moral Hazard Estimates Using Land Prices** (Table 6) | **DATA HALF DONE 2026-08-10** | Stage 25 (`25_prices_reg.R`) rebuilds `prices_reg` + `shares5` + `less_1500` from the recovered `parcel_nb_lavoura_wide.rds` files (29 regions, 2002-2017, 418 priced region-years). `vtn_2015-2022_clean.rds` also recovered -> our VTN steps 7-8 unblocked | The tab:6 Stata do-file (still unrecovered); the `yearly_average_price_region` and turnover producers (missing from every script) |
@@ -27,7 +27,7 @@ Status key: **DONE** = we reproduce it · **PARTIAL** = some columns/panels only
 | **Fig 3 Eligibility and Expectation Effects (event study, 4 panels)** | **RATE PANELS DONE 2026-08-07** | Stage 22 (`22_event_studies.R`) estimates the eventdd-equivalent rate paths (ref 2008) on our panel and the recovered April-2025 panel; `event_study_coefs[_recovered].csv`. Deforested-AREA panels (log value, variable==1) not yet ported |
 | Fig 4 Conditional Effects of Forgiveness Expectation | **DONE 2026-08-07** | Stage 22 (`event_study_fig4.csv`): below-1500 band ramps to +6.28 by 2014, 1500-2500 band flat/negative — the printed conditional pattern (published panels are the two rate panels; area panels commented out in the tex) |
 | Fig 10 Anticipating Another Amnesty (invaded property areas) | CODE MISSING | Distributional analysis of claim sizes over time |
-| Fig applications — Amnesty Take-Up | DATA MISSING | Terra Legal applications |
+| Fig applications — Amnesty Take-Up | DATA RECOVERED 2026-08-11 | DadosTerraLegal.csv in hand; the bar-chart aggregation is 3_policy1.R:70-110 (not yet ported — plots only) |
 | Fig fine — Spatial Distribution of Fines | DATA MISSING | Geolocated IBAMA fines |
 
 ## Appendix

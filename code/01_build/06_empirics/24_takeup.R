@@ -114,11 +114,14 @@ message("pipeline 0 matched: ", nrow(terra_legal_shp), " | unmatched left: ", nr
 # ---- pipeline 1: SNCR -> SIGEF (:183-219) ------------------------------------
 sncr_files <- list.files(file.path(dd, "input_titles", "sncr"),
                          pattern = "*.csv", recursive = TRUE)
+# all columns as character: the state files type-guess differently (legacy's
+# base rbind coerced silently), and the downstream parsing treats AREA TOTAL as
+# the raw string anyway
 sncr <- data.frame()
 for (k in sncr_files) {
   d <- read_delim(file.path(dd, "input_titles", "sncr", k), delim = ";",
                   escape_double = FALSE, locale = locale(), trim_ws = TRUE,
-                  show_col_types = FALSE)
+                  col_types = cols(.default = "c"))
   sncr <- bind_rows(sncr, d)
 }
 message("sncr rows: ", nrow(sncr))
@@ -258,17 +261,23 @@ r08 <- panel[year == 2008, .(COD_IMO, defo_rate_2008 = deforestation_rate)]
 flags <- merge(flags, unique(r08, by = "COD_IMO"), by = "COD_IMO", all.x = TRUE)
 
 # area covariates from the SICAR microdata (:443-446)
+# prefer the _update microdata (has `cancelled`); fall back to our local
+# temas_ambientais.csv (same fields minus cancelled), selecting what exists
 tem_f <- file.path(dd, "miseEnPlace_full", "temas_ambientais_update.csv")
 if (!file.exists(tem_f)) tem_f <- here("data", "input", "sicar", "microdata",
-                                       "temas_ambientais_update.csv")
+                                       "temas_ambientais.csv")
 if (file.exists(tem_f)) {
-  tem <- fread(tem_f, select = c("registro_car", "uf", "codigo_ibge",
-                                 "area_do_imovel", "area_rural_consolidada", "cancelled"))
+  want <- c("registro_car", "uf", "codigo_ibge", "area_do_imovel",
+            "area_rural_consolidada", "cancelled")
+  avail <- intersect(want, names(fread(tem_f, nrows = 0)))
+  tem <- fread(tem_f, select = avail)
   tem <- unique(tem, by = "registro_car")
   setnames(tem, "registro_car", "COD_IMO")
   flags <- merge(flags, tem, by = "COD_IMO", all.x = TRUE)
+  message("covariates joined from ", basename(tem_f), ": ",
+          paste(setdiff(avail, "registro_car"), collapse = ", "))
 } else {
-  message("NOTE: temas_ambientais_update.csv not found -- area covariates omitted")
+  message("NOTE: temas microdata not found -- area covariates omitted")
 }
 
 fwrite(flags, file.path(emp_dir, "takeup.csv"))

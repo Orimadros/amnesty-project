@@ -1311,3 +1311,14 @@ MAPNORTHBRAZIL.R in data/input/landvalues/vnp/), and both projects' .Rhistory.
    the audit's grouped-select question in favor of our port's semantics.
 5. In flight at writing: stage 23 (visible-fraction rebuild, 149 scenes) and
    stage 24 (takeup: 102,559 audited polygons read; matching pipelines running).
+
+## Take-up (stage 24) — both printed anchors reproduce (2026-08-11, overnight)
+
+3_policy1.R runs end to end on the recovered data. Pipeline 0 matched 25,652
+applications by name x municipality; the SNCR/SIGEF/SNCI pipelines added the
+rest; 102,559 audited polygons in the pool. On the April-vintage eligible
+universe (81,406 parcels): **applies = 9,131 (11.2%)** vs the paper's
+"approximately 10%" lower bound, and **receives/applies = 3,819/9,131 = 41.8%**
+vs the printed "42% of squatters with property boundaries audited were given
+ownership titles". Both anchors match. takeup.csv (the takeup.dta equivalent)
+now exists; the tab:25 regressions remain data-only (no surviving do-file).
