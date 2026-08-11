@@ -1322,3 +1322,14 @@ universe (81,406 parcels): **applies = 9,131 (11.2%)** vs the paper's
 vs the printed "42% of squatters with property boundaries audited were given
 ownership titles". Both anchors match. takeup.csv (the takeup.dta equivalent)
 now exists; the tab:25 regressions remain data-only (no surviving do-file).
+
+## Visible-fraction provenance PROVEN (stage 23, 2026-08-11 overnight)
+
+Rebuilt from the recovered 149 Clear-Spots scenes via V3's own code (:396-611):
+the per-FILE yearly mean of the area shares reproduces enforcement_clouds.dta's
+fraction_control / fraction_target in every cell to the file's 2-decimal float32
+precision, except a single one-cent gap (2006 control 0.668 vs .66). Combined
+with the buffer-0.5 result, the hand-assembled .dta's provenance is now fully
+established — and the A/B half-scene averaging artifact (visibility mechanically
+halved 2007-2010, straddling the treatment cutoff) is DEMONSTRATED, not
+inferred. visible_fraction_rebuilt.csv replaces the lost V3 export.

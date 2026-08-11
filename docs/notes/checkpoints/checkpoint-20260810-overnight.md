@@ -49,22 +49,23 @@ only recovered code, port price side to the data walls.
   script (price_north = price_lavoura per the :2573 NA-fallback); tab:6 Stata
   do-file unrecovered -> estimation stops at the dataset.
 
-## Remaining tonight (in order)
+## MORNING STATUS — overnight goals met
 
-1. Collect stage 23 result -> document the fraction-rule verdict in
-   paper_legacy_method_diffs.md (A/B half-scene artifact confirmation).
-2. When downloads land: extract titles + miseEnPlace_full; fetch uf_uf_id.xlsx
-   individually (browse data/input/auxiliary listing for its href); hunt
-   miseEnPlace_full for *.do / crosswalk / temas_update; run stage 24 (takeup);
-   compare applies/receives to the paper's ~10% / 42% anchors.
-3. Validate our vnp01/vnp02 panels against their city_region_yearly files; wire
-   vtn_YYYY_clean.rds into VTN steps 7-8 (separate stage or config pointing at
-   data/legacy_dropbox/pptw_data_clean/vtn/).
-4. Optional: extract rest of pptw_data_output.zip (car_vtn_IHS breakdowns may
-   BE the yearly_average_price_region precursor — check before declaring the
-   wall final).
-5. Update missing_for_replication rows (takeup, Fig applications), the version
-   map, this checkpoint; final commit.
+1. DONE: stage 23 verdict — fraction rule PROVEN (per-file yearly means; one
+   one-cent gap 2006 control). enforcement_clouds.dta provenance closed.
+2. DONE: takeup runs end to end — applies 11.2% (paper ~10% lower bound),
+   receives/applies 41.8% (paper 42%). takeup.csv with covariates.
+3. DONE: VNP panels validated 100.00% cell-identical to theirs.
+   vtn_YYYY[_clean].rds recovered (input_landvalues + pptw_data_clean) — VTN
+   steps 7-8 wiring is the next session's first task.
+4. DONE: yearly_average_price_region.xlsx FOUND (landvalues/vnp) and wired into
+   stage 25 (price_north real for 238 region-years). Do-file census FINAL: only
+   empirics_amazon_final.do exists in either share.
+5. Remaining next session: wire vtn tables into VTN 7-8; optionally port
+   3_policy1's Fig-applications bar aggregations; extract remaining
+   pptw_data_output content (car_vtn/vnp_IHS breakdowns) if the tab:6 do-file
+   ever surfaces; the turnover producer + tab:6/tab:25 do-files stay on the
+   Pedro ask-list.
 
 ## Ask-list for Pedro after tonight (shrunk)
 

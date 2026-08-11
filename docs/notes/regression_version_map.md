@@ -130,11 +130,13 @@ Key facts:
   function). **Neither V1 nor V2 exports anything.** V3 deletes the cloud
   pipeline, writes fines_per_warning_ratios.csv + visible_fraction.csv from
   precomputed "Clear Spots" shapefiles (produced by no surviving script).
-- **enforcement_clouds.dta is hand-assembled**: enforcement_control/target =
-  buffer-0.5 fines_per_warning rounded to 2 dp (verified exactly, all 10 years
-  × both arms; buffers 1 and 2 ruled out). fraction_control/target match a
-  plain mean over per-FILE rows — **A/B half-scenes averaged as separate
-  observations**, mechanically halving measured visibility in 2007-2010.
+- **enforcement_clouds.dta is hand-assembled — provenance now FULLY PROVEN**:
+  enforcement_control/target = buffer-0.5 fines_per_warning rounded to 2 dp
+  (verified exactly); fraction_control/target = per-FILE yearly means of the
+  Clear-Spots area shares, REBUILT from scratch by stage 23 (2026-08-11) and
+  matching every cell to the .dta's precision (one one-cent gap, 2006 control).
+  The A/B half-scene averaging artifact (visibility halved 2007-2010) is
+  demonstrated.
 - Consequences for the printed tab:3 cols 7-8: (i) the visibility artifact
   straddles the 2009 cutoff (depresses 2007-2010), so the `after` coefficient on
   adjusted enforcement partly reflects DETER scene-delivery format, not
