@@ -1333,3 +1333,43 @@ with the buffer-0.5 result, the hand-assembled .dta's provenance is now fully
 established — and the A/B half-scene averaging artifact (visibility mechanically
 halved 2007-2010, straddling the treatment cutoff) is DEMONSTRATED, not
 inferred. visible_fraction_rebuilt.csv replaces the lost V3 export.
+
+---
+
+# RESULT (2026-08-11, morning): estimation reconstructed from printed specs — tab:25 and tab:6 largely reproduce
+
+User authorization 2026-08-11: the migrate-only rule is relaxed FOR ESTIMATION
+(no do-file survives for these exhibits). Stages 26-27 implement the printed
+specifications, with every interpretive choice flagged in their headers.
+
+## tab:25 (take-up), stage 26 on the MAY-vintage takeup build
+
+The May universe is EXACTLY the printed N (73,809); applies 10.5% vs printed
+baseline 10.2%; receives-among-applicants 41.6% vs 42.2%; receives regression
+N 7,352 vs 7,507. Coefficients (state-FE cols, ours vs printed): size bins
++0.074/+0.058/+0.034 vs +0.066/+0.053/+0.032 (applies) and
++0.100/-0.063/-0.097 vs +0.099/-0.068/-0.117 (receives, first nearly exact);
+the concave deforestation pattern reproduces (+0.078/-0.074 vs +0.043/-0.057,
+same shape); 27-28 of 28 signs match across the four columns (the exception is
+statistically zero on both sides). Verdict: reproduced to vintage precision.
+
+## tab:6 (land prices), stage 27 on the rebuilt prices_reg
+
+Under log(price_lavoura) + COUNT shares x post (region + year FE, cluster
+year), the printed ELIGIBLE coefficients reproduce: 0.438 (0.151) vs 0.419
+(0.144) and **0.535 (0.109) vs 0.518 (0.108)** — the paper's headline gamma_1
+that feeds omega ~ $272/ha. The ineligible coefficient is same-signed but low
+(0.11-0.19 vs 0.34-0.41), consistent with the ineligible universe's documented
+vintage drift; the area-share variant brackets it from above (0.69-0.84).
+Col (5) is same-signed (0.23 vs 0.68) at N 22 vs 28. Cols (3)-(4) remain
+walled (no turnover data). Spec choices selected by match are documented in
+the stage header (price variable and share basis were the two free choices).
+
+## Also closed this morning
+
+- VTN steps 7-8 ran on the recovered vtn_region tables — our VTN chain is
+  unblocked end to end.
+- Stage 28: Fig-applications data (requests peak 25,584 in 2009; 4.25M ha) —
+  matches the printed chart profile.
+- Stage 29: the do-file's :163 invaded-area regression — post-2009 invaders
+  claim 2,841 ha smaller properties (se 527), supporting fig:10's story.

@@ -192,7 +192,7 @@ message("combined application polygons: ", nrow(applications_shp))
 # EMP_CAR_VINTAGE=april swaps in the April file (81,406) from output_full.
 VINTAGE <- Sys.getenv("EMP_CAR_VINTAGE", unset = "may")
 car_f <- if (VINTAGE == "april") file.path(dd, "output_full", "car_eligible_cleaned.shp") else
-         file.path(dd, "miseEnPlace", "car_eligible_cleaned.shp")
+         file.path(dd, "miseEnPlace_full", "car_eligible_cleaned.shp")
 message("eligible universe: ", VINTAGE, " vintage (", car_f, ")")
 car_eligible <- read_sf(car_f)
 
