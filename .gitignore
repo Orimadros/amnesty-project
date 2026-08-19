@@ -42,3 +42,11 @@ Thumbs.db
 # Environment
 .env
 
+
+# Run logs and monitoring output (ephemeral)
+build/logs/
+step3_health.log
+
+# Personal learning/prep materials (not part of the pipeline)
+output/learning/
+docs/handover/
