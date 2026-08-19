@@ -99,3 +99,91 @@ du -sh "$ROOT/data/intermediate"                  # source reference: 90 GB
   "Sign Out Active Account" (bottom-right), then quit/uninstall. Claude can do
   this only if macOS Screen Recording permission is granted to the Claude
   desktop app.
+
+## RESUMED 2026-08-18 17:05 EDT
+
+Resumed via a detached runner so it survives session teardown:
+
+- Script: `~/amnesty_resume_upload.sh` (does step 1 then step 2, then verifies)
+- Launched with: `nohup caffeinate -is ~/amnesty_resume_upload.sh > ~/amnesty_resume_upload.out 2>&1 &`
+- Logs: `~/amnesty_upload_intermediate.log`, `~/amnesty_upload_docker.log`,
+  console/verify output in `~/amnesty_resume_upload.out`
+
+Change from the plan above: the partial Docker tar on Drive is NOT deleted
+first — the fresh `rclone copy` replaces it (size differs), which avoids a
+destructive step for the same result.
+
+Starting point confirmed at resume: 02_intermediate 40,865 files / 31.1 GiB;
+00_docker_image 2 files / 2.195 GiB (truncated tar).
+
+Check progress:
+```bash
+grep -i ETA ~/amnesty_upload_intermediate.log | tail -3
+cat ~/amnesty_resume_upload.out
+```
+
+### Restarted 2026-08-18 18:56 EDT at --transfers 24
+
+Run 1 (`--transfers 8 --checkers 16`) sustained only ~1.6 MiB/s; killed at 25%
+(10.5 GiB moved, nothing lost — `rclone copy` resumes). Relaunched the same
+script with `--transfers 24 --checkers 32`, which sustains ~4.5 MiB/s (~2.8x).
+Run 1's log preserved at `~/amnesty_upload_intermediate.log.run1`.
+
+Lesson for any future Drive push from this repo: on trees of many ~1 MB files,
+per-file round-trip overhead dominates and `--transfers` is the lever that
+matters, not `--drive-chunk-size`.
+
+## COMPLETE 2026-08-19 07:37 EDT
+
+Upload finished. Final verified state of
+`gdrive:Amazon Land Amnesty - Replication/release_2026-08`:
+
+| folder | objects | size |
+|---|---|---|
+| 00_docker_image | 2 | 2.195 GiB |
+| 01_raw_inputs | 40,343 | 42.131 GiB |
+| 02_intermediate | 59,956 | 89.326 GiB |
+| 03_final_outputs | 32 | 383.9 MiB |
+| 04_documentation | 46 | 19.06 MiB |
+| 05_recovered_legacy | 2,263 | 9.945 GiB |
+| **total** | **102,642** | **~144 GiB** |
+
+`02_intermediate` object count matches the source exactly (59,956 files);
+17,148 files transferred in the final run with **0 errors**.
+
+### Correction: the Docker image was never partial
+
+The "00_docker_image PARTIAL — tar should be ~9 GB, REDO" line above was a
+MISDIAGNOSIS. `docker images` reports two columns:
+
+```text
+DISK USAGE   8.99GB   <- uncompressed layers inside the Docker VM
+CONTENT SIZE 2.36GB   <- what `docker save` actually writes
+```
+
+The checkpoint read DISK USAGE. `docker save` emits 2,356,610,560 bytes, which
+is exactly what was already on Drive from 2026-08-11. Nothing was truncated and
+nothing needed redoing.
+
+Verified on 2026-08-19 by re-running `docker save` and comparing both ways:
+
+```text
+Drive-side MD5   ef1a29ce36e0ade3f183bfeed51a2732  == freshly saved tar
+sha256 sidecar   c2eedd38506e35d1d7b0544940de774d64f85a075500a455f4ced34e16ae3fb5  == freshly saved tar
+```
+
+Useful side finding: `docker save amazon-amnesty:dev` is **bit-reproducible**
+on this host — two independent saves produced byte-identical tars. Good for the
+30-year reproducibility contract.
+
+The sidecar was rewritten to name the tar by bare filename rather than the
+absolute host path, so `shasum -c amazon-amnesty-dev.tar.sha256` now verifies
+from inside the download directory.
+
+### Still open (unchanged, non-urgent)
+
+- rclone uses its shared Google client_id, retiring during 2026. For an archive
+  meant to outlive that, mint an own client_id.
+- `data/legacy_dropbox/fetch2/**` (~12 GB of raw download zips) deliberately
+  excluded; add only if the raw archives are wanted.
+- Log out of the "Easy Access" app (needs Screen Recording permission).
