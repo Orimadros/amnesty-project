@@ -4,7 +4,9 @@ SHELL := /bin/bash
 R_SCRIPT ?= Rscript
 
 VTN_DIR := code/01_build/02_vtn
-CAR_SCRIPT := code/01_build/01_car/0_build_car_layers_from_raw.R
+CAR_SRC := code/01_build/01_car
+CAR_SCRIPT := $(CAR_SRC)/0_build_car_layers_from_raw.R
+CAR_HELPERS := $(CAR_SRC)/_helpers_car_util.R $(CAR_SRC)/_helpers_car_cleaning.R
 
 STAMP_DIR := build/stamps
 
@@ -27,6 +29,37 @@ VTN_CAR_MATCH_SCRIPT := $(VTN_DIR)/6_match_car_IHSregion.R
 VTN_CAR_REGION_SCRIPT := $(VTN_DIR)/7_vtn_car_IHSregion_merge.R
 VTN_CAR_PARCEL_SCRIPT := $(VTN_DIR)/8_vtn_car_merge.R
 
+# Lavoura chain: FNP land prices x IHS regions -> attached to CAR parcels.
+LAV_DIR := code/01_build/03_lavoura
+LAV_WORKBOOK := data/input/landvalues/vnp/Lavoura_FNP.xlsx
+LAV01_STAMP := $(STAMP_DIR)/lavoura01_regions.stamp
+LAV02_STAMP := $(STAMP_DIR)/lavoura02_parcels.stamp
+LAV03_STAMP := $(STAMP_DIR)/lavoura03_nb_join.stamp
+
+# NB/VNP chain: FNP North-Brazil land prices -> wide (state x region) x year panels.
+# NOTE: the source workbook is "data/input/landvalues/vnp/Land Price_North Brazil_FNP.xlsx".
+# Its name contains spaces, which make would split into separate prerequisites, so it is
+# deliberately NOT listed as one; _helpers_vnp.R checks for it and errors clearly.
+VNP_DIR := code/01_build/05_vnp
+VNP_HELPERS := $(VNP_DIR)/_helpers_vnp.R
+VNP01_STAMP := $(STAMP_DIR)/vnp01_panel_2016on.stamp
+VNP02_STAMP := $(STAMP_DIR)/vnp02_panel_pre2015.stamp
+
+# Empirics chain: per-parcel deforestation from the MapBiomas transition rasters,
+# then the paper's eligible / ineligible / never-eligible split.
+EMP_DIR := code/01_build/06_empirics
+EMP_YEARS := 2004 2008 2014
+EMP_DEFO_OUT := $(addprefix data/intermediate/empirics/parcel_defo_,$(addsuffix .csv,$(EMP_YEARS)))
+EMP_SPLIT_STAMP := $(STAMP_DIR)/emp02_eligibility_split.stamp
+
+CAR00_STAMP := $(STAMP_DIR)/car00_registration_years.stamp
+CAR01_STAMP := $(STAMP_DIR)/car01_clean_shapes.stamp
+CAR02_STAMP := $(STAMP_DIR)/car02_union_sensitive.stamp
+CAR03_STAMP := $(STAMP_DIR)/car03_intersect_cars.stamp
+CAR03B_STAMP := $(STAMP_DIR)/car03b_consolidate_overlaps.stamp
+CAR04_STAMP := $(STAMP_DIR)/car04_muni_year.stamp
+CAR05_STAMP := $(STAMP_DIR)/car05_combine_biome.stamp
+
 VTN_PRECLEAN_STAMP := $(STAMP_DIR)/vtn_preclean.stamp
 VTN_CLEAN_STAMP := $(STAMP_DIR)/vtn_clean.stamp
 VTN_CORR_STAMP := $(STAMP_DIR)/vtn_corrections.stamp
@@ -35,21 +68,32 @@ VTN_CAR_IHS_STAMP := $(STAMP_DIR)/vtn_car_ihs.stamp
 VTN_CAR_REGION_STAMP := $(STAMP_DIR)/vtn_car_regions.stamp
 VTN_CAR_PARCEL_STAMP := $(STAMP_DIR)/vtn_car_parcels.stamp
 
+# MapBiomas backbone (raw-only chain: tiling -> legacy forest -> cover -> transitions)
+MB_DIR := code/01_build/04_mapbiomas
+MB_GRIDS_STAMP := $(STAMP_DIR)/mapbiomas_grids.stamp
+MB_LEGACY_STAMP := $(STAMP_DIR)/mapbiomas_legacy.stamp
+MB_COVER_STAMP := $(STAMP_DIR)/mapbiomas_cover.stamp
+MB_TRANSITIONS_STAMP := $(STAMP_DIR)/mapbiomas_transitions.stamp
+MB_STATS_STAMP := $(STAMP_DIR)/mapbiomas_stats.stamp
+
 .PHONY: help all \
 	build analysis \
 	01_build 02_analysis \
-	01_car 02_vtn 02_vtn_car 03_lavoura \
-	vtn vtn_car car lavoura full clean-stamps
+	01_car 02_vtn 02_vtn_car 03_lavoura 04_mapbiomas 05_vnp 06_empirics \
+	vtn vtn_car car lavoura mapbiomas vnp empirics full clean-stamps
 
 help:
 	@echo "Targets:"
 	@echo "  make -f analysis.mk all         # current stable pipeline (VTN 0-5)"
 	@echo "  make -f analysis.mk 01_build    # build subtree aliases"
 	@echo "  make -f analysis.mk 02_analysis # analysis subtree alias"
-	@echo "  make -f analysis.mk 01_car      # run CAR scaffold"
+	@echo "  make -f analysis.mk 01_car      # run full CAR chain (00-05) + scaffold"
 	@echo "  make -f analysis.mk 02_vtn      # run VTN 0-5"
 	@echo "  make -f analysis.mk 02_vtn_car  # run VTN steps 6-8 (CAR-dependent)"
-	@echo "  make -f analysis.mk 03_lavoura  # run lavoura subtree (stub)"
+	@echo "  make -f analysis.mk 03_lavoura  # run lavoura steps 1-3 (needs VTN 6 + vnp)"
+	@echo "  make -f analysis.mk 04_mapbiomas # run MapBiomas backbone 0-3 (FULL: all years/tiles, hours)"
+	@echo "  make -f analysis.mk 05_vnp      # run NB/VNP price panels (both FNP sheets)"
+	@echo "  make -f analysis.mk 06_empirics # parcel deforestation + eligibility split (SLOW: ~1h)"
 	@echo "  make -f analysis.mk full        # run build + analysis aliases"
 	@echo "  make -f analysis.mk clean-stamps"
 
@@ -59,7 +103,7 @@ build: 01_build
 
 analysis: 02_analysis
 
-01_build: 01_car 02_vtn 02_vtn_car 03_lavoura
+01_build: 01_car 02_vtn 02_vtn_car 03_lavoura 04_mapbiomas 05_vnp 06_empirics
 
 02_analysis:
 	@echo "No analysis DAG wired yet under code/02_analysis."
@@ -72,15 +116,90 @@ analysis: 02_analysis
 
 03_lavoura: lavoura
 
+04_mapbiomas: mapbiomas
+
+05_vnp: vnp
+
+06_empirics: empirics
+
 vtn: $(MUNI_CLEAN) $(VTN_PRECLEAN_OUT) $(VTN_CLEAN_OUT) $(VTN_CORR_STAMP) $(VTN_REGION_OUT) $(IHS_REGIONS)
 
 vtn_car: $(VTN_CAR_IHS_STAMP) $(VTN_CAR_REGION_STAMP) $(VTN_CAR_PARCEL_STAMP)
 
-car:
+# CAR chain: 00 registration years -> 01 robust cleaning -> {02 union overlaps,
+# 03/03b pairwise conflicts, 05 biome combine} -> 04 muni-year panel -> scaffold.
+car: $(CAR04_STAMP) $(CAR05_STAMP)
 	$(R_SCRIPT) "$(CAR_SCRIPT)"
 
-lavoura:
-	@echo "No lavoura DAG wired yet under code/01_build/03_lavoura."
+$(CAR00_STAMP): $(CAR_SRC)/00_car_registration_years.R $(CAR_HELPERS) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/00_car_registration_years.R"
+	@date > "$@"
+
+$(CAR01_STAMP): $(CAR_SRC)/01_clean_car_shapes.R $(CAR_HELPERS) $(CAR00_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/01_clean_car_shapes.R"
+	@date > "$@"
+
+$(CAR02_STAMP): $(CAR_SRC)/02_car_union_sensitive_land.R $(CAR_HELPERS) $(CAR00_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/02_car_union_sensitive_land.R"
+	@date > "$@"
+
+$(CAR03_STAMP): $(CAR_SRC)/03_intersect_individual_cars.R $(CAR_HELPERS) $(CAR00_STAMP) $(CAR01_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/03_intersect_individual_cars.R"
+	@date > "$@"
+
+$(CAR03B_STAMP): $(CAR_SRC)/03b_consolidate_car_overlaps.R $(CAR_HELPERS) $(CAR03_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/03b_consolidate_car_overlaps.R"
+	@date > "$@"
+
+$(CAR04_STAMP): $(CAR_SRC)/04_consolidate_muni_year.R $(CAR_HELPERS) $(CAR02_STAMP) $(CAR03B_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/04_consolidate_muni_year.R"
+	@date > "$@"
+
+$(CAR05_STAMP): $(CAR_SRC)/05_combine_car_biome.R $(CAR_HELPERS) $(CAR01_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(CAR_SRC)/05_combine_car_biome.R"
+	@date > "$@"
+
+# Lavoura chain: 1 FNP prices x CAR regions -> 2 prices attached to parcels ->
+# 3 NB/VNP prices joined alongside (produces what 2_empirics consumes).
+lavoura: $(LAV02_STAMP) $(LAV03_STAMP)
+
+$(LAV01_STAMP): $(LAV_DIR)/1_match_lavoura_regions.R $(LAV_WORKBOOK) $(VTN_CAR_IHS_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(LAV_DIR)/1_match_lavoura_regions.R"
+	@date > "$@"
+
+$(LAV02_STAMP): $(LAV_DIR)/2_match_lavoura_parcels.R $(LAV01_STAMP) $(VTN_CAR_IHS_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(LAV_DIR)/2_match_lavoura_parcels.R"
+	@date > "$@"
+
+$(LAV03_STAMP): $(LAV_DIR)/3_join_nb_lavoura_parcels.R $(LAV01_STAMP) $(VNP01_STAMP) $(VNP02_STAMP) $(VTN_CAR_IHS_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(LAV_DIR)/3_join_nb_lavoura_parcels.R"
+	@date > "$@"
+
+# Full-scale run of the MapBiomas backbone (all years/tiles). Long-running.
+# Scope can be narrowed for a smoke test via the MB_* env vars the scripts read.
+mapbiomas: $(MB_STATS_STAMP)
+
+# NB/VNP chain: one wide price panel per FNP sheet era. The two are independent.
+vnp: $(VNP01_STAMP) $(VNP02_STAMP)
+
+$(VNP01_STAMP): $(VNP_DIR)/1_city_region_panel_2016on.R $(VNP_HELPERS) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(VNP_DIR)/1_city_region_panel_2016on.R"
+	@date > "$@"
+
+$(VNP02_STAMP): $(VNP_DIR)/2_city_region_panel_pre2015.R $(VNP_HELPERS) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(VNP_DIR)/2_city_region_panel_pre2015.R"
+	@date > "$@"
+
+# Empirics: one deforestation panel per year (resumable per raster tile), then
+# the eligibility split + Table 1 comparison.
+empirics: $(EMP_SPLIT_STAMP)
+
+data/intermediate/empirics/parcel_defo_%.csv: $(EMP_DIR)/1_parcel_deforestation.R
+	EMP_YEAR=$* $(R_SCRIPT) "$(EMP_DIR)/1_parcel_deforestation.R"
+
+$(EMP_SPLIT_STAMP): $(EMP_DIR)/2_eligibility_split.R $(EMP_DEFO_OUT) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(EMP_DIR)/2_eligibility_split.R"
+	@date > "$@"
 
 full: 01_build 02_analysis
 
@@ -133,4 +252,30 @@ $(VTN_CAR_REGION_STAMP): $(VTN_CAR_REGION_SCRIPT) $(VTN_CAR_IHS_STAMP) $(VTN_REG
 
 $(VTN_CAR_PARCEL_STAMP): $(VTN_CAR_PARCEL_SCRIPT) $(VTN_CAR_IHS_STAMP) $(VTN_REGION_OUT) $(IHS_REGIONS) | $(STAMP_DIR)
 	$(R_SCRIPT) "$(VTN_CAR_PARCEL_SCRIPT)"
+	@date > "$@"
+
+# --- MapBiomas backbone ----------------------------------------------------
+# Step 0: crop rasters to biome + tile into grids.
+$(MB_GRIDS_STAMP): $(MB_DIR)/0_tile_rasters_to_grids.R | $(STAMP_DIR)
+	$(R_SCRIPT) "$(MB_DIR)/0_tile_rasters_to_grids.R"
+	@date > "$@"
+
+# Step 1: legacy-forest baseline (needs the grids).
+$(MB_LEGACY_STAMP): $(MB_DIR)/1_build_legacy_forest.R $(MB_GRIDS_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(MB_DIR)/1_build_legacy_forest.R"
+	@date > "$@"
+
+# Step 2: per-year forest/human cover (needs the grids).
+$(MB_COVER_STAMP): $(MB_DIR)/2_classify_cover.R $(MB_GRIDS_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(MB_DIR)/2_classify_cover.R"
+	@date > "$@"
+
+# Step 3: transitions (needs both the legacy baseline and the per-year cover).
+$(MB_TRANSITIONS_STAMP): $(MB_DIR)/3_compute_transitions.R $(MB_LEGACY_STAMP) $(MB_COVER_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(MB_DIR)/3_compute_transitions.R"
+	@date > "$@"
+
+# Step 4: biome-level deforestation stats (needs the transition rasters).
+$(MB_STATS_STAMP): $(MB_DIR)/4_deforestation_stats.R $(MB_TRANSITIONS_STAMP) | $(STAMP_DIR)
+	$(R_SCRIPT) "$(MB_DIR)/4_deforestation_stats.R"
 	@date > "$@"

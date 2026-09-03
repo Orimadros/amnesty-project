@@ -21,7 +21,16 @@ suppressPackageStartupMessages({
   library(purrr)
 })
 
-sf_use_s2(TRUE)
+# NOTE(migration): this scaffold runs under GEOS (planar) geometry, matching the
+# legacy 2_empirics workflow. The s2 (spherical) engine rejects a whole class of
+# geometries here -- the biome border self-crosses on the sphere (#23), and the
+# constructive st_intersection/st_difference steps in the overlap-share scoring
+# produce near-degenerate slivers that s2 then refuses to re-parse ("Loop not
+# valid: Edge ... degenerate/crosses"). GEOS treats all of these as valid. This is
+# a map-classification artifact (eligible/ineligible/already_treated), not the
+# validated municipal panel, so planar geometry is both faithful and appropriate.
+# See issues log #23/#26.
+sf_use_s2(FALSE)
 
 ensure_dir <- function(path) {
   if (!dir.exists(path)) {
@@ -35,6 +44,18 @@ ensure_dir <- function(path) {
 
 st_erase <- function(x, y) {
   st_difference(x, st_union(st_geometry(y)))
+}
+
+# Repair geometries that are GEOS-valid but s2-invalid (rings that self-cross on
+# the sphere), which s2 rejects at intersection time ("Loop N not valid: Edge ...
+# crosses edge ..."). One-time s2_rebuild(split_crossing_edges) rewrites the WKB.
+# Same repair as issues log #23; applied to every raw layer this script intersects.
+s2_repair <- function(x) {
+  g <- s2::as_s2_geography(st_as_binary(st_geometry(x)), check = FALSE)
+  g <- s2::s2_rebuild(g, options = s2::s2_options(split_crossing_edges = TRUE))
+  st_geometry(x) <- st_as_sfc(g)
+  st_crs(x) <- 4674
+  x
 }
 
 normalize_text <- function(x) {
@@ -56,8 +77,20 @@ calc_overlap_share <- function(car_sf, mask_sf) {
     return(tibble(car_id = car_sf$car_id, overlap_share = 0))
   }
 
+  # NOTE(migration): st_intersection over all ~801k CARs vs the mask is the scaffold
+  # bottleneck (ran >2 h unchunked). The control/target masks are small federal-land
+  # subsets, so almost no CAR overlaps them. Pre-filter with the spatial index
+  # (st_intersects) and only intersect the few CARs that actually touch the mask --
+  # non-touching CARs contribute 0 overlap, which the right_join + coalesce(0) below
+  # already yields. Output-equivalent; same optimization as issues log #25.
+  touch <- lengths(st_intersects(car_sf, mask_sf)) > 0
+  message(sprintf("    overlap pre-filter: %d / %d CARs touch mask", sum(touch), nrow(car_sf)))
+  if (!any(touch)) {
+    return(tibble(car_id = car_sf$car_id, overlap_share = 0))
+  }
+
   inter <- st_intersection(
-    car_sf %>% select(car_id, area_ha),
+    car_sf[touch, ] %>% select(car_id, area_ha),
     mask_sf %>% select(geometry)
   )
 
@@ -81,9 +114,12 @@ calc_overlap_share <- function(car_sf, mask_sf) {
 ensure_dir(here("data", "intermediate", "car"))
 
 # ---- raw inputs (explicit, no hidden fallbacks) -----------------------------
-raw_amazon_biome <- here("data", "input", "auxiliary", "amazon_biome_border", "amazon_biome_border.shp")
+# NOTE(migration): path fixes 2026-07-15 -- "auxiliary" -> on-disk "aux", and
+# car_combined_amazonBiome2.shp is now PRODUCED by 05_combine_car_biome.R into
+# data/intermediate/car/ (it is no longer a given input).
+raw_amazon_biome <- here("data", "input", "aux", "amazon_biome_border", "amazon_biome_border.shp")
 raw_snci <- here("data", "input", "titles", "snci", "snci_certificacoes", "Imvel certificado SNCI Brasil.shp")
-raw_car_base <- here("data", "input", "sicar", "car_combined_amazonBiome2.shp")
+raw_car_base <- here("data", "intermediate", "car", "car_combined_amazonBiome2.shp")
 raw_cnfp_dir <- here("data", "input", "cnfp", "SHP_2013")
 
 required_paths <- c(raw_amazon_biome, raw_snci, raw_car_base, raw_cnfp_dir)
@@ -170,10 +206,13 @@ st_write(already_treated, out_already_treated, delete_layer = TRUE, quiet = TRUE
 message("Wrote: ", out_already_treated)
 
 # ---- 2) Deterministic CAR split --------------------------------------------
+# NOTE(migration): raw_car_base is car_combined_amazonBiome2.shp, which
+# 05_combine_car_biome.R ALREADY clipped to the biome. The legacy re-intersection
+# with amazon_biome here is redundant (a no-op that re-intersects 801k features
+# against the ~168k-edge biome polygon -- the same wasted-work trap as #25). Dropped.
 car_raw <- st_read(raw_car_base, quiet = TRUE) %>%
   st_transform(4674) %>%
-  st_make_valid() %>%
-  st_intersection(amazon_biome)
+  st_make_valid()
 
 car_id_col <- pick_first_column(car_raw, c("COD_IMOVEL", "COD_IMO", "cod_imovel", "registro_car"))
 if (is.na(car_id_col)) {
